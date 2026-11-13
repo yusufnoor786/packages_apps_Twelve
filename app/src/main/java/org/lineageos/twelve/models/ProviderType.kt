@@ -89,4 +89,14 @@ enum class ProviderType(
         ),
         true,
     ),
+
+    /**
+     * Built-in online music catalog, selected using the online mode switch.
+     */
+    SAAVN(
+        R.string.online_service_name,
+        R.drawable.ic_cloud,
+        listOf(),
+        false,
+    ),
 }

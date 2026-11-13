@@ -21,14 +21,17 @@ import org.lineageos.twelve.ext.loadThumbnail
 import org.lineageos.twelve.models.Thumbnail
 import kotlin.reflect.safeCast
 
+/**
+ * Mini player. It's a floating Material 3 card that is positioned by the hosting activity.
+ */
 class NowPlayingBar @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     @AttrRes defStyleAttr: Int = com.google.android.material.R.attr.materialCardViewStyle,
 ) : MaterialCardView(context, attrs, defStyleAttr) {
     private val artistNameTextView by lazy { findViewById<TextView>(R.id.artistNameTextView) }
-    private val albumTitleTextView by lazy { findViewById<TextView>(R.id.albumTitleTextView) }
     private val circularProgressIndicator by lazy { findViewById<CircularProgressIndicator>(R.id.circularProgressIndicator) }
+    private val nextMaterialButton by lazy { findViewById<MaterialButton>(R.id.nextMaterialButton) }
     private val playPauseMaterialButton by lazy { findViewById<MaterialButton>(R.id.playPauseMaterialButton) }
     private val thumbnailImageView by lazy { findViewById<ImageView>(R.id.thumbnailImageView) }
     private val titleTextView by lazy { findViewById<TextView>(R.id.titleTextView) }
@@ -37,12 +40,12 @@ class NowPlayingBar @JvmOverloads constructor(
         setCardBackgroundColor(
             MaterialColors.getColorStateList(
                 context,
-                com.google.android.material.R.attr.colorSurfaceContainer,
+                com.google.android.material.R.attr.colorSurfaceContainerHigh,
                 cardBackgroundColor,
             )
         )
-        cardElevation = 0f
-        radius = 0f
+        radius = resources.getDimension(R.dimen.now_playing_bar_corner_radius)
+        cardElevation = resources.getDimension(R.dimen.now_playing_bar_elevation)
         strokeWidth = 0
 
         inflate(context, R.layout.now_playing_bar, this)
@@ -52,6 +55,8 @@ class NowPlayingBar @JvmOverloads constructor(
 
     fun setOnPlayPauseClickListener(l: OnClickListener?) =
         playPauseMaterialButton.setOnClickListener(l)
+
+    fun setOnNextClickListener(l: OnClickListener?) = nextMaterialButton.setOnClickListener(l)
 
     fun updateIsPlaying(isPlaying: Boolean) {
         playPauseMaterialButton.setIconResource(
@@ -75,12 +80,6 @@ class NowPlayingBar @JvmOverloads constructor(
             ?: context.getString(R.string.artist_unknown)
         if (artistNameTextView.text != artistName) {
             artistNameTextView.text = artistName
-        }
-
-        val albumTitle = mediaMetadata.albumTitle
-            ?: context.getString(R.string.album_unknown)
-        if (albumTitleTextView.text != albumTitle) {
-            albumTitleTextView.text = albumTitle
         }
     }
 

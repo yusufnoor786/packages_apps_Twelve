@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import org.lineageos.twelve.models.Provider
+import org.lineageos.twelve.models.ProviderType
 import org.lineageos.twelve.models.areItemsTheSame
 
 class ProvidersViewModel(application: Application) : TwelveViewModel(application) {
@@ -27,7 +28,8 @@ class ProvidersViewModel(application: Application) : TwelveViewModel(application
         providersRepository.allProviders,
         navigationProvider,
     ) { allVisibleProviders, navigationProvider ->
-        allVisibleProviders.map { provider ->
+        // The online catalog is chosen with the mode switch
+        allVisibleProviders.filter { it.type != ProviderType.SAAVN }.map { provider ->
             provider to provider.areItemsTheSame(navigationProvider)
         }
     }

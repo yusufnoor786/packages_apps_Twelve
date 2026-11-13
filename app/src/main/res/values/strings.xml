@@ -268,6 +268,7 @@
     <!-- Content descriptions -->
     <string name="content_description_play_pause">Play/pause</string>
     <string name="content_description_thumbnail">Thumbnail</string>
+    <string name="content_description_next_track">Next track</string>
 
     <!-- Play buttons -->
     <string name="play_all">Play all</string>
@@ -331,4 +332,20 @@
     <string name="favorites_playlist">Favorites</string>
     <string name="add_to_favorites">Add to favorites</string>
     <string name="remove_from_favorites">Remove from favorites</string>
+
+    <!-- Online mode -->
+    <string name="mode_offline">Offline</string>
+    <string name="mode_online">Online</string>
+    <string name="mode_switch_description">Music source</string>
+    <string name="online_service_name" translatable="false">JioSaavn</string>
+    <string name="online_service">Service</string>
+    <string name="online_languages">Languages</string>
+    <string name="online_header">Online</string>
+    <string name="online_audio_quality">Streaming quality</string>
+    <string name="online_languages_summary">Languages used for trending songs and recommendations</string>
+    <string name="online_activity_trending_songs">Trending songs</string>
+    <string name="online_activity_new_trending">Hot right now</string>
+    <string name="online_activity_new_albums">New releases</string>
+    <string name="online_activity_charts">Charts</string>
+    <string name="online_activity_top_playlists">Top playlists</string>
 </resources>

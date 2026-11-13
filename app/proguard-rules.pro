@@ -22,3 +22,11 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# SessionTokenUtils reads these constants reflectively when the package manager hides our service
+-keepclassmembers class androidx.media3.session.SessionToken {
+    private static final java.lang.String FIELD_*;
+}
+-keepclassmembers class androidx.media3.session.SessionTokenImplBase {
+    private static final java.lang.String FIELD_*;
+}

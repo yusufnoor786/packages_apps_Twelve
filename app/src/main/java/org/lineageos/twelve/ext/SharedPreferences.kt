@@ -11,6 +11,8 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
+import org.lineageos.twelve.datasources.SaavnDataSource
+import org.lineageos.twelve.datasources.saavn.SaavnStream
 import org.lineageos.twelve.models.ProviderIdentifier
 import org.lineageos.twelve.models.RepeatMode
 import org.lineageos.twelve.models.SortingRule
@@ -47,7 +49,7 @@ val SharedPreferences.fullscreenMode: Boolean
     get() = getBoolean(FULLSCREEN_MODE_KEY, FULLSCREEN_MODE_DEFAULT)
 
 const val ENABLE_OFFLOAD_KEY = "enable_offload"
-private const val ENABLE_OFFLOAD_DEFAULT = true
+private const val ENABLE_OFFLOAD_DEFAULT = false
 var SharedPreferences.enableOffload: Boolean
     get() = getBoolean(ENABLE_OFFLOAD_KEY, ENABLE_OFFLOAD_DEFAULT)
     set(value) = edit {
@@ -55,7 +57,7 @@ var SharedPreferences.enableOffload: Boolean
     }
 
 const val ENABLE_FLOAT_OUTPUT_KEY = "enable_float_output"
-private const val ENABLE_FLOAT_OUTPUT_DEFAULT = true
+private const val ENABLE_FLOAT_OUTPUT_DEFAULT = false
 var SharedPreferences.enableFloatOutput: Boolean
     get() = getBoolean(ENABLE_FLOAT_OUTPUT_KEY, ENABLE_FLOAT_OUTPUT_DEFAULT)
     set(value) = edit {
@@ -88,6 +90,31 @@ var SharedPreferences.defaultProvider: ProviderIdentifier?
             Json.encodeToString(serializer<ProviderIdentifier?>(), value)
         )
     }
+
+// Online prefs
+const val ONLINE_MODE_KEY = "online_mode"
+private const val ONLINE_MODE_DEFAULT = false
+var SharedPreferences.onlineMode: Boolean
+    get() = getBoolean(ONLINE_MODE_KEY, ONLINE_MODE_DEFAULT)
+    set(value) = edit {
+        putBoolean(ONLINE_MODE_KEY, value)
+    }
+
+const val ONLINE_AUDIO_QUALITY_KEY = "online_audio_quality"
+private val ONLINE_AUDIO_QUALITY_DEFAULT = SaavnStream.Quality.HIGH
+val SharedPreferences.onlineAudioQuality: SaavnStream.Quality
+    get() = getString(ONLINE_AUDIO_QUALITY_KEY, null)?.let { name ->
+        SaavnStream.Quality.entries.firstOrNull { it.name == name }
+    } ?: ONLINE_AUDIO_QUALITY_DEFAULT
+
+const val ONLINE_LANGUAGES_KEY = "online_languages"
+private val ONLINE_LANGUAGES_DEFAULT = listOf("hindi", "english")
+val SharedPreferences.onlineLanguages: List<String>
+    get() = getStringSet(ONLINE_LANGUAGES_KEY, null)
+        ?.filter { it in SaavnDataSource.LANGUAGES }
+        ?.sortedBy { SaavnDataSource.LANGUAGES.indexOf(it) }
+        ?.takeIf { it.isNotEmpty() }
+        ?: ONLINE_LANGUAGES_DEFAULT
 
 // Experimental prefs
 const val SPLIT_LOCAL_DEVICES_KEY = "split_local_devices"

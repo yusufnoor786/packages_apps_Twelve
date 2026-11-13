@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <dimen name="now_playing_bar_height">64dp</dimen>
+    <dimen name="now_playing_bar_margin_horizontal">12dp</dimen>
+    <dimen name="now_playing_bar_margin_vertical">8dp</dimen>
+    <dimen name="now_playing_bar_corner_radius">28dp</dimen>
+    <dimen name="now_playing_bar_elevation">6dp</dimen>
+</resources>

@@ -20,6 +20,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.shareIn
@@ -27,7 +28,9 @@ import org.lineageos.twelve.database.TwelveDatabase
 import org.lineageos.twelve.datasources.AmpacheDataSource
 import org.lineageos.twelve.datasources.JellyfinDataSource
 import org.lineageos.twelve.datasources.MediaStoreDataSource
+import org.lineageos.twelve.datasources.SaavnDataSource
 import org.lineageos.twelve.datasources.SubsonicDataSource
+import org.lineageos.twelve.R
 import org.lineageos.twelve.ext.Bundle
 import org.lineageos.twelve.ext.SPLIT_LOCAL_DEVICES_KEY
 import org.lineageos.twelve.ext.preferenceFlow
@@ -159,12 +162,23 @@ class ProvidersRepository(
             }
         }
 
+    // Online catalog, always available
+    private val onlineProviders = flowOf(
+        listOf(
+            Provider(
+                SaavnDataSource.PROVIDER_IDENTIFIER,
+                context.getString(R.string.online_service_name),
+            ) to Bundle()
+        )
+    )
+
     // All providers
     val allProvidersToArguments = combine(
         mediaStoreProviders,
         subsonicProviders,
         jellyfinProviders,
         ampacheProviders,
+        onlineProviders,
     ) { it ->
         buildList {
             it.forEach {
@@ -225,6 +239,8 @@ class ProvidersRepository(
     ) = when (providerType) {
         ProviderType.MEDIASTORE -> throw Exception("Cannot create MediaStore providers")
 
+        ProviderType.SAAVN -> throw Exception("Cannot create online catalog providers")
+
         ProviderType.SUBSONIC -> {
             val server = arguments.requireArgument(SubsonicDataSource.ARG_SERVER)
             val username = arguments.requireArgument(SubsonicDataSource.ARG_USERNAME)
@@ -279,6 +295,8 @@ class ProvidersRepository(
     ) {
         when (providerIdentifier.type) {
             ProviderType.MEDIASTORE -> throw Exception("Cannot update MediaStore providers")
+
+            ProviderType.SAAVN -> throw Exception("Cannot update online catalog providers")
 
             ProviderType.SUBSONIC -> {
                 val server = arguments.requireArgument(SubsonicDataSource.ARG_SERVER)
@@ -336,6 +354,8 @@ class ProvidersRepository(
     suspend fun deleteProvider(providerIdentifier: ProviderIdentifier) {
         when (providerIdentifier.type) {
             ProviderType.MEDIASTORE -> throw Exception("Cannot delete MediaStore providers")
+
+            ProviderType.SAAVN -> throw Exception("Cannot delete online catalog providers")
 
             ProviderType.SUBSONIC -> database.getSubsonicProviderDao().delete(
                 providerIdentifier.typeId

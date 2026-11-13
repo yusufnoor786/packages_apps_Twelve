@@ -23,16 +23,24 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
+import java.io.File
 import okhttp3.Cache
+import okhttp3.OkHttpClient
 import org.lineageos.twelve.database.TwelveDatabase
 import org.lineageos.twelve.datasources.AmpacheDataSource
 import org.lineageos.twelve.datasources.FileDataSource
 import org.lineageos.twelve.datasources.JellyfinDataSource
 import org.lineageos.twelve.datasources.MediaDataSource
 import org.lineageos.twelve.datasources.MediaStoreDataSource
+import org.lineageos.twelve.datasources.SaavnDataSource
 import org.lineageos.twelve.datasources.SubsonicDataSource
+import org.lineageos.twelve.datasources.saavn.LyricsClient
+import org.lineageos.twelve.datasources.saavn.SaavnClient
+import org.lineageos.twelve.datasources.saavn.SaavnLibraryStore
 import org.lineageos.twelve.ext.DEFAULT_PROVIDER_KEY
+import org.lineageos.twelve.ext.ONLINE_MODE_KEY
 import org.lineageos.twelve.ext.defaultProvider
+import org.lineageos.twelve.ext.onlineMode
 import org.lineageos.twelve.ext.preferenceFlow
 import org.lineageos.twelve.models.Error
 import org.lineageos.twelve.models.ProviderIdentifier
@@ -109,6 +117,18 @@ class MediaRepository(
     )
 
     /**
+     * Online catalog data source.
+     */
+    private val saavnDataSource = OkHttpClient.Builder().cache(cache).build().let { okHttpClient ->
+        SaavnDataSource(
+            SaavnClient(okHttpClient),
+            LyricsClient(okHttpClient),
+            SaavnLibraryStore(File(context.filesDir, ONLINE_LIBRARY_FILE_NAME)),
+            sharedPreferences,
+        )
+    }
+
+    /**
      * File data source.
      */
     private val fileDataSource = FileDataSource(
@@ -122,6 +142,7 @@ class MediaRepository(
             subsonicDataSource,
             jellyfinDataSource,
             ampacheDataSource,
+            saavnDataSource,
             fileDataSource,
         )
     ).asStateFlow()
@@ -140,17 +161,36 @@ class MediaRepository(
         )
 
     /**
+     * Whether the online catalog is currently being used instead of the offline providers.
+     */
+    val onlineMode = sharedPreferences.preferenceFlow(
+        ONLINE_MODE_KEY, getter = SharedPreferences::onlineMode
+    )
+        .flowOn(Dispatchers.IO)
+        .shareIn(
+            scope,
+            SharingStarted.WhileSubscribed(),
+            replay = 1,
+        )
+
+    /**
      * The current navigation provider.
      */
     val navigationProvider = combine(
+        onlineMode,
         navigationProviderIdentifier,
         providersRepository.allProviders,
-    ) { navigationProviderIdentifier, allProviders ->
-        navigationProviderIdentifier?.let {
-            allProviders.firstOrNull { provider ->
+    ) { onlineMode, navigationProviderIdentifier, allProviders ->
+        val offlineProviders = allProviders.filter { it.type != ProviderType.SAAVN }
+
+        when (onlineMode) {
+            true -> allProviders.firstOrNull { it.type == ProviderType.SAAVN }
+            false -> null
+        } ?: navigationProviderIdentifier?.let {
+            offlineProviders.firstOrNull { provider ->
                 provider.type == it.type && provider.typeId == it.typeId
             }
-        } ?: allProviders.firstOrNull()
+        } ?: offlineProviders.firstOrNull()
     }
         .flowOn(Dispatchers.IO)
         .shareIn(
@@ -170,7 +210,23 @@ class MediaRepository(
      * @param providerIdentifier The new navigation provider identifier
      */
     fun setNavigationProvider(providerIdentifier: ProviderIdentifier) {
-        sharedPreferences.defaultProvider = providerIdentifier
+        when (providerIdentifier.type) {
+            ProviderType.SAAVN -> sharedPreferences.onlineMode = true
+
+            else -> {
+                sharedPreferences.defaultProvider = providerIdentifier
+                sharedPreferences.onlineMode = false
+            }
+        }
+    }
+
+    /**
+     * Switch between the offline providers and the online catalog.
+     *
+     * @param onlineMode True to use the online catalog, false to use the offline providers
+     */
+    fun setOnlineMode(onlineMode: Boolean) {
+        sharedPreferences.onlineMode = onlineMode
     }
 
     /**
@@ -372,6 +428,7 @@ class MediaRepository(
         ProviderType.SUBSONIC -> subsonicDataSource
         ProviderType.JELLYFIN -> jellyfinDataSource
         ProviderType.AMPACHE -> ampacheDataSource
+        ProviderType.SAAVN -> saavnDataSource
     }
 
     /**
@@ -432,6 +489,8 @@ class MediaRepository(
     ) = mediaTypeOf(mediaItemUri) != null
 
     companion object {
+        private const val ONLINE_LIBRARY_FILE_NAME = "online_library.json"
+
         val defaultAlbumsSortingRule = SortingRule(
             SortingStrategy.CREATION_DATE, true
         )

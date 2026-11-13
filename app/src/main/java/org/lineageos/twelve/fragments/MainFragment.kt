@@ -9,6 +9,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.LinearLayout
 import androidx.activity.BackEventCompat
@@ -32,6 +33,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.search.SearchView
@@ -69,6 +71,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     private val viewModel by viewModels<MainViewModel>()
 
     // Views
+    private val modeToggleGroup by getViewProperty<MaterialButtonToggleGroup>(R.id.modeToggleGroup)
     private val navigationBarView by getViewProperty<NavigationBarView>(R.id.navigationBarView)
     private val playRandomSongsButton by getViewProperty<MaterialButton>(R.id.playRandomSongsButton)
     private val providerMaterialButton by getViewProperty<MaterialButton>(R.id.providerMaterialButton)
@@ -79,6 +82,9 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     private val settingsMaterialButton by getViewProperty<MaterialButton>(R.id.settingsMaterialButton)
     private val toolbar by getViewProperty<MaterialToolbar>(R.id.toolbar)
     private val viewPager2 by getViewProperty<ViewPager2>(R.id.viewPager2)
+
+    // Layout
+    private var playRandomSongsButtonBottomMargin = 0
 
     // System services
     private val inputMethodManager: InputMethodManager
@@ -172,6 +178,10 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        playRandomSongsButtonBottomMargin =
+            (playRandomSongsButton.layoutParams as? ViewGroup.MarginLayoutParams)
+                ?.bottomMargin ?: 0
+
         // Insets
         ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout())
@@ -186,8 +196,10 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(navigationBarView) { v, windowInsets ->
+            // The floating now playing bar is placed above this view, so the space it takes
+            // must not be added to the bottom padding
             val insets = windowInsets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+                WindowInsetsCompat.Type.navigationBars() or WindowInsetsCompat.Type.displayCutout()
             )
 
             v.updatePadding(
@@ -205,8 +217,30 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                 WindowInsetsCompat.Type.displayCutout()
             )
             val systemBarsInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val navigationBarsInsets = windowInsets.getInsets(
+                WindowInsetsCompat.Type.navigationBars()
+            )
 
-            fun adjustInsets(insets: Insets) = Insets.of(
+            // Space taken by the floating now playing bar, 0 when it's hidden
+            val nowPlayingBarArea = (systemBarsInsets.bottom - navigationBarsInsets.bottom)
+                .coerceAtLeast(0)
+
+            // Keep the shuffle button above the now playing bar
+            (playRandomSongsButton.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
+                val bottomMargin = playRandomSongsButtonBottomMargin + when (
+                    resources.configuration.isLandscape
+                ) {
+                    true -> systemBarsInsets.bottom
+                    false -> nowPlayingBarArea
+                }
+
+                if (it.bottomMargin != bottomMargin) {
+                    it.bottomMargin = bottomMargin
+                    playRandomSongsButton.layoutParams = it
+                }
+            }
+
+            fun adjustInsets(insets: Insets, portraitBottom: Int = 0) = Insets.of(
                 when (!v.isRtl && resources.configuration.isLandscape) {
                     true -> 0
                     false -> insets.left
@@ -218,14 +252,14 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                 },
                 when (resources.configuration.isLandscape) {
                     true -> insets.bottom
-                    false -> 0
+                    false -> portraitBottom
                 },
             )
 
             WindowInsetsCompat.Builder(windowInsets)
                 .setInsets(
                     WindowInsetsCompat.Type.systemBars(),
-                    adjustInsets(systemBarsInsets),
+                    adjustInsets(systemBarsInsets, nowPlayingBarArea),
                 )
                 .setInsets(
                     WindowInsetsCompat.Type.displayCutout(),
@@ -313,6 +347,12 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             } ?: false
         }
 
+        modeToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                viewModel.setOnlineMode(checkedId == R.id.onlineModeButton)
+            }
+        }
+
         settingsMaterialButton.setOnClickListener {
             val intent = Intent(context, SettingsActivity::class.java)
             startActivity(intent)
@@ -369,6 +409,22 @@ class MainFragment : Fragment(R.layout.fragment_main) {
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.onlineMode.collectLatest { onlineMode ->
+                        val checkedId = when (onlineMode) {
+                            true -> R.id.onlineModeButton
+                            false -> R.id.offlineModeButton
+                        }
+
+                        if (modeToggleGroup.checkedButtonId != checkedId) {
+                            modeToggleGroup.check(checkedId)
+                        }
+
+                        // The provider chooser is only meaningful for the offline sources
+                        providerMaterialButton.isVisible = !onlineMode
+                    }
+                }
+
                 launch {
                     viewModel.navigationProvider.collectLatest {
                         it?.let {

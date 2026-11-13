@@ -87,6 +87,7 @@ dependencies {
         exclude(group = "com.android.support")
     }
     implementation(libs.okhttp)
+    testImplementation("junit:junit:4.13.2")
 }
 
 generateBp {

@@ -24,6 +24,7 @@ import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.listen
 import androidx.media3.common.util.ExperimentalApi
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
@@ -198,6 +199,19 @@ class PlaybackService : MediaLibraryService() {
 
     private val analyticsListener by lazy {
         object : AnalyticsListener {
+            override fun onAudioUnderrun(
+                eventTime: AnalyticsListener.EventTime,
+                bufferSize: Int,
+                bufferSizeMs: Long,
+                elapsedSinceLastFeedMs: Long,
+            ) {
+                Log.w(
+                    LOG_TAG,
+                    "Audio underrun at ${eventTime.currentPlaybackPositionMs} ms, " +
+                            "buffer ${bufferSizeMs} ms, last feed ${elapsedSinceLastFeedMs} ms ago"
+                )
+            }
+
             override fun onEvents(player: Player, events: AnalyticsListener.Events) {
                 if (events.contains(AnalyticsListener.EVENT_AUDIO_INPUT_FORMAT_CHANGED)) {
                     outputConfigurationRepository.updateFormat(
@@ -466,8 +480,19 @@ class PlaybackService : MediaLibraryService() {
                 )
             })
             .setSkipSilenceEnabled(sharedPreferences.skipSilence)
+            .setLoadControl(
+                // Start playing with a thicker buffer so that streamed songs don't begin on a
+                // thin margin
+                DefaultLoadControl.Builder()
+                    .setBufferDurationsMs(
+                        DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
+                        DefaultLoadControl.DEFAULT_MAX_BUFFER_MS,
+                        BUFFER_FOR_PLAYBACK_MS,
+                        BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS,
+                    )
+                    .build()
+            )
             .setWakeMode(C.WAKE_MODE_NETWORK)
-            .experimentalSetDynamicSchedulingEnabled(true)
             .build()
 
         mediaLibrarySession = MediaLibrarySession.Builder(
@@ -701,6 +726,9 @@ class PlaybackService : MediaLibraryService() {
 
     companion object {
         private val LOG_TAG = PlaybackService::class.simpleName!!
+
+        private const val BUFFER_FOR_PLAYBACK_MS = 4_000
+        private const val BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS = 8_000
 
         /**
          * Toggles play/pause. On play request and empty queue, resumption playlist will be loaded.

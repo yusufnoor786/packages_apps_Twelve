@@ -17,14 +17,14 @@
             app:title="@string/fullscreen_mode" />
 
         <SwitchPreference
-            app:defaultValue="true"
+            app:defaultValue="false"
             app:iconSpaceReserved="false"
             app:key="enable_offload"
             app:summary="@string/enable_offload_summary"
             app:title="@string/enable_offload" />
 
         <SwitchPreference
-            app:defaultValue="true"
+            app:defaultValue="false"
             app:iconSpaceReserved="false"
             app:key="enable_float_output"
             app:summary="@string/enable_float_output_summary"
@@ -53,6 +53,30 @@
             app:iconSpaceReserved="false"
             app:key="rescan_media_store"
             app:title="@string/rescan_media_store" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:title="@string/online_header">
+
+        <ListPreference
+            app:defaultValue="HIGH"
+            app:entries="@array/online_audio_quality_entries"
+            app:entryValues="@array/online_audio_quality_values"
+            app:iconSpaceReserved="false"
+            app:key="online_audio_quality"
+            app:title="@string/online_audio_quality"
+            app:useSimpleSummaryProvider="true" />
+
+        <MultiSelectListPreference
+            app:defaultValue="@array/online_languages_default"
+            app:entries="@array/online_languages_entries"
+            app:entryValues="@array/online_languages_values"
+            app:iconSpaceReserved="false"
+            app:key="online_languages"
+            app:summary="@string/online_languages_summary"
+            app:title="@string/online_languages" />
 
     </PreferenceCategory>
 

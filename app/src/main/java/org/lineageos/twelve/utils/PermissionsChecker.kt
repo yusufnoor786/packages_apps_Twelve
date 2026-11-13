@@ -14,12 +14,17 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
+import androidx.preference.PreferenceManager
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.lineageos.twelve.R
+import org.lineageos.twelve.ext.ONLINE_MODE_KEY
+import org.lineageos.twelve.ext.onlineMode
 import org.lineageos.twelve.ext.permissionsFlow
 import org.lineageos.twelve.ext.permissionsGranted
+import org.lineageos.twelve.ext.preferenceFlow
 
 /**
  * A coroutine-based class that checks main app permissions.
@@ -88,12 +93,22 @@ class PermissionsChecker private constructor(
         }
     }
 
-    suspend fun withPermissionsGranted(unit: suspend () -> Unit) = getContext().permissionsFlow(
-        getLifecycle(), permissions
-    ).distinctUntilChanged().collectLatest {
-        val (_, denied) = it
+    /**
+     * Whether these are the permissions needed to read the device's media. Those aren't required
+     * while the online catalog is in use.
+     */
+    private val isLocalMediaAccess = permissions.contentEquals(PermissionsUtils.mainPermissions)
 
-        if (denied.isNotEmpty()) {
+    suspend fun withPermissionsGranted(unit: suspend () -> Unit) = combine(
+        getContext().permissionsFlow(getLifecycle(), permissions).distinctUntilChanged(),
+        PreferenceManager.getDefaultSharedPreferences(getContext())
+            .preferenceFlow(ONLINE_MODE_KEY) { onlineMode },
+    ) { status, onlineMode ->
+        status to (onlineMode && isLocalMediaAccess)
+    }.distinctUntilChanged().collectLatest { (status, skipChecks) ->
+        val (_, denied) = status
+
+        if (denied.isNotEmpty() && !skipChecks) {
             checkPermissions()
         } else {
             unit()

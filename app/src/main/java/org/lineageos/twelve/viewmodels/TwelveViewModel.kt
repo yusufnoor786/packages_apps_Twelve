@@ -10,7 +10,6 @@ import android.content.ComponentName
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.session.MediaController
-import androidx.media3.session.SessionToken
 import androidx.preference.PreferenceManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,6 +30,7 @@ import org.lineageos.twelve.ext.typedRepeatMode
 import org.lineageos.twelve.models.Audio
 import org.lineageos.twelve.models.RepeatMode
 import org.lineageos.twelve.services.PlaybackService
+import org.lineageos.twelve.utils.SessionTokenUtils
 
 /**
  * Base view model for all app view models.
@@ -51,7 +51,7 @@ abstract class TwelveViewModel(application: Application) : AndroidViewModel(appl
     }
 
     private val sessionToken by lazy {
-        SessionToken(
+        SessionTokenUtils.forLibraryService(
             applicationContext,
             ComponentName(applicationContext, PlaybackService::class.java)
         )

@@ -8,6 +8,7 @@ package org.lineageos.twelve
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.FrameLayout
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -78,18 +79,16 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             val insets = windowInsets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
-            val systemBarsInsets = windowInsets.getInsets(
-                WindowInsetsCompat.Type.systemBars()
+            val navigationBarsInsets = windowInsets.getInsets(
+                WindowInsetsCompat.Type.navigationBars()
             )
 
-            nowPlayingBar.setContentPadding(
-                insets.left,
-                0,
-                insets.right,
-                systemBarsInsets.bottom,
-            )
+            systemInsets = insets
+            updateNowPlayingBarPlacement()
 
-            // This translates to bottom padding + now playing bar height
+            // This translates to bottom padding + space taken by the floating now playing bar.
+            // The navigation bars insets are left untouched so that the main screen can still
+            // place its own navigation bar at the very bottom
             WindowInsetsCompat.Builder(windowInsets)
                 .setInsets(
                     WindowInsetsCompat.Type.systemBars(),
@@ -97,13 +96,22 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                         insets.left,
                         insets.top,
                         insets.right,
-                        when (nowPlayingBar.isVisible) {
-                            true -> nowPlayingBar.measuredHeight
-                            false -> insets.bottom
+                        insets.bottom + when (nowPlayingBar.isVisible) {
+                            true -> nowPlayingBarAreaHeight
+                            false -> 0
                         }
                     )
                 )
+                .setInsets(WindowInsetsCompat.Type.navigationBars(), navigationBarsInsets)
                 .build()
+        }
+
+        // Keep the floating now playing bar above the navigation bar of the main screen
+        frameLayout.viewTreeObserver.addOnGlobalLayoutListener {
+            updateNowPlayingBarPlacement()
+        }
+        navController.addOnDestinationChangedListener { _, _, _ ->
+            frameLayout.post { updateNowPlayingBarPlacement() }
         }
 
         // Intents
@@ -117,6 +125,10 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
         nowPlayingBar.setOnPlayPauseClickListener {
             nowPlayingViewModel.togglePlayPause()
+        }
+
+        nowPlayingBar.setOnNextClickListener {
+            nowPlayingViewModel.seekToNext()
         }
 
         lifecycleScope.launch {
@@ -278,6 +290,61 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Total vertical space taken by the floating now playing bar, including its margins.
+     */
+    private val nowPlayingBarAreaHeight by lazy {
+        resources.getDimensionPixelSize(R.dimen.now_playing_bar_height) +
+                2 * resources.getDimensionPixelSize(R.dimen.now_playing_bar_margin_vertical)
+    }
+
+    private var systemInsets = Insets.NONE
+
+    /**
+     * Float the now playing bar above the bottom navigation bar of the main screen, or above the
+     * system bars everywhere else.
+     */
+    private fun updateNowPlayingBarPlacement() {
+        val horizontalMargin = resources.getDimensionPixelSize(
+            R.dimen.now_playing_bar_margin_horizontal
+        )
+        val verticalMargin = resources.getDimensionPixelSize(
+            R.dimen.now_playing_bar_margin_vertical
+        )
+
+        var bottomBase = systemInsets.bottom
+        var startBase = systemInsets.left
+
+        val navigationBarView = frameLayout.findViewById<View>(R.id.navigationBarView)
+            ?.takeIf { navController.currentDestination?.id == R.id.mainFragment }
+            ?.takeIf { it.isShown && it.width > 0 }
+
+        if (navigationBarView != null) {
+            when (navigationBarView.width >= frameLayout.width / 2) {
+                // Bottom navigation bar
+                true -> bottomBase = maxOf(bottomBase, frameLayout.height - navigationBarView.top)
+
+                // Navigation rail
+                false -> startBase = maxOf(startBase, navigationBarView.right)
+            }
+        }
+
+        val layoutParams = nowPlayingBar.layoutParams as FrameLayout.LayoutParams
+        val start = startBase + horizontalMargin
+        val end = systemInsets.right + horizontalMargin
+        val bottom = bottomBase + verticalMargin
+
+        if (layoutParams.marginStart != start
+            || layoutParams.marginEnd != end
+            || layoutParams.bottomMargin != bottom
+        ) {
+            layoutParams.marginStart = start
+            layoutParams.marginEnd = end
+            layoutParams.bottomMargin = bottom
+            nowPlayingBar.layoutParams = layoutParams
         }
     }
 

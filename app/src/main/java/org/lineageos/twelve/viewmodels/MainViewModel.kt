@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
+import org.lineageos.twelve.ext.onlineMode
 import org.lineageos.twelve.models.Error
 import org.lineageos.twelve.models.FlowResult
 import org.lineageos.twelve.models.FlowResult.Companion.asFlowResult
@@ -34,6 +35,17 @@ class MainViewModel(application: Application) : TwelveViewModel(application) {
             SharingStarted.WhileSubscribed(),
             null,
         )
+
+    val onlineMode = mediaRepository.onlineMode
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(),
+            sharedPreferences.onlineMode,
+        )
+
+    fun setOnlineMode(onlineMode: Boolean) {
+        mediaRepository.setOnlineMode(onlineMode)
+    }
 
     private val searchQuery = MutableStateFlow("" to false)
 

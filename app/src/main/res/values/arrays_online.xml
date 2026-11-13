@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string-array name="online_audio_quality_entries">
+        <item>Low (96 kbps)</item>
+        <item>Normal (160 kbps)</item>
+        <item>High (320 kbps)</item>
+    </string-array>
+
+    <string-array name="online_audio_quality_values" translatable="false">
+        <item>LOW</item>
+        <item>MEDIUM</item>
+        <item>HIGH</item>
+    </string-array>
+
+    <string-array name="online_languages_default" translatable="false">
+        <item>hindi</item>
+        <item>english</item>
+    </string-array>
+
+    <string-array name="online_languages_entries" translatable="false">
+        <item>Hindi</item>
+        <item>English</item>
+        <item>Punjabi</item>
+        <item>Tamil</item>
+        <item>Telugu</item>
+        <item>Bengali</item>
+        <item>Marathi</item>
+        <item>Gujarati</item>
+        <item>Kannada</item>
+        <item>Malayalam</item>
+        <item>Bhojpuri</item>
+        <item>Haryanvi</item>
+        <item>Rajasthani</item>
+        <item>Assamese</item>
+        <item>Odia</item>
+    </string-array>
+
+    <string-array name="online_languages_values" translatable="false">
+        <item>hindi</item>
+        <item>english</item>
+        <item>punjabi</item>
+        <item>tamil</item>
+        <item>telugu</item>
+        <item>bengali</item>
+        <item>marathi</item>
+        <item>gujarati</item>
+        <item>kannada</item>
+        <item>malayalam</item>
+        <item>bhojpuri</item>
+        <item>haryanvi</item>
+        <item>rajasthani</item>
+        <item>assamese</item>
+        <item>odia</item>
+    </string-array>
+</resources>
