@@ -175,7 +175,8 @@ object PlaylistImport {
 
         var score = when {
             wantedTitle == foundTitle -> 3.0
-            foundTitle.startsWith(wantedTitle) || wantedTitle.startsWith(foundTitle) -> 1.5
+            // A title that only starts the same is another song unless artist and length agree
+            foundTitle.startsWith(wantedTitle) || wantedTitle.startsWith(foundTitle) -> 0.5
             else -> return 0.0
         }
 
@@ -206,5 +207,5 @@ object PlaylistImport {
     /**
      * Below this the best candidate is probably another song.
      */
-    const val MINIMUM_SCORE = 2.0
+    const val MINIMUM_SCORE = 3.0
 }

@@ -22,9 +22,14 @@ import androidx.annotation.LayoutRes
 import androidx.annotation.StringRes
 import androidx.core.view.isNotEmpty
 import androidx.core.view.isVisible
+import coil3.request.crossfade
+import coil3.request.error
+import coil3.request.placeholder
 import com.google.android.material.card.MaterialCardView
 import org.lineageos.twelve.R
+import org.lineageos.twelve.ext.loadThumbnail
 import org.lineageos.twelve.ext.use
+import org.lineageos.twelve.models.Thumbnail
 
 /**
  * A poor man's Material Design 3 ListItem implementation.
@@ -201,6 +206,62 @@ class ListItem @JvmOverloads constructor(
 
     fun setLeadingIconImage(uri: Uri) = leadingIconImageView.setImageAndUpdateVisibility(uri)
 
+    /**
+     * Show the cover of an item in place of the leading icon, in a rounded square.
+     *
+     * @param placeholder Shown while the cover loads and when there is none
+     */
+    fun setLeadingCover(thumbnail: Thumbnail?, @DrawableRes placeholder: Int) {
+        val density = resources.displayMetrics.density
+        val size = (COVER_SIZE_DP * density).toInt()
+
+        leadingIconImageView.apply {
+            layoutParams = layoutParams.also {
+                it.width = size
+                it.height = size
+            }
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            imageTintList = null
+            clipToOutline = true
+            outlineProvider = object : android.view.ViewOutlineProvider() {
+                override fun getOutline(view: View, outline: android.graphics.Outline) {
+                    outline.setRoundRect(0, 0, view.width, view.height, COVER_RADIUS_DP * density)
+                }
+            }
+
+            val icon = androidx.appcompat.content.res.AppCompatResources.getDrawable(context, placeholder)
+                ?.mutate()?.also {
+                    androidx.core.graphics.drawable.DrawableCompat.setTint(
+                        it,
+                        com.google.android.material.color.MaterialColors.getColor(
+                            this, com.google.android.material.R.attr.colorOnSurfaceVariant
+                        )
+                    )
+                }
+            // A cover that is not there is the icon, padded, on a tonal square
+            setBackgroundColor(
+                com.google.android.material.color.MaterialColors.getColor(
+                    this, com.google.android.material.R.attr.colorSurfaceContainerHighest
+                )
+            )
+            setPadding(0, 0, 0, 0)
+            isVisible = true
+
+            when (thumbnail) {
+                null -> {
+                    scaleType = ImageView.ScaleType.CENTER
+                    setImageDrawable(icon)
+                }
+
+                else -> loadThumbnail(thumbnail, placeholder = null) {
+                    placeholder(icon)
+                    error(icon)
+                    crossfade(true)
+                }
+            }
+        }
+    }
+
     fun setLeadingText(@StringRes resId: Int) = leadingTextView.setTextAndUpdateVisibility(resId)
     fun setLeadingText(@StringRes resId: Int, vararg formatArgs: Any) =
         leadingTextView.setTextAndUpdateVisibility(resId, *formatArgs)
@@ -305,4 +366,9 @@ class ListItem @JvmOverloads constructor(
 
     private fun TextView.setTextAndUpdateVisibility(@StringRes resId: Int, vararg formatArgs: Any) =
         setTextAndUpdateVisibility(resources.getString(resId, *formatArgs))
+
+    private companion object {
+        private const val COVER_SIZE_DP = 52
+        private const val COVER_RADIUS_DP = 12f
+    }
 }

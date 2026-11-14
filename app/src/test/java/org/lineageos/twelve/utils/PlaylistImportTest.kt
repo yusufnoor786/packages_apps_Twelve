@@ -68,6 +68,17 @@ class PlaylistImportTest {
     }
 
     @Test
+    fun aTitleThatOnlyStartsTheSameIsNotTheSong() {
+        val track = ImportTrack("Home (with Machine Gun Kelly)", "mgk", 202)
+
+        val other = PlaylistImport.score(track, "home bittersweet home", listOf("MGK"), 193)
+        val same = PlaylistImport.score(track, "Home", listOf("mgk", "X Ambassadors"), 203)
+
+        assertTrue(other < PlaylistImport.MINIMUM_SCORE)
+        assertTrue(same >= PlaylistImport.MINIMUM_SCORE)
+    }
+
+    @Test
     fun accentsAndPackagingDoNotMatter() {
         assertEquals(
             PlaylistImport.normalize("Café del Mar (feat. X) - Remastered"),

@@ -49,8 +49,14 @@ class SpotifyClient(
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun playlist(playlistId: String): Result {
+        // The public page of the playlist needs nothing, the API only helps for long playlists
+        val embedded = embedded(playlistId)
+        if (embedded != null) {
+            return Result.Success(embedded)
+        }
+
         if (clientId.isBlank() || clientSecret.isBlank()) {
-            return Result.NotAuthorized
+            return Result.NotFound
         }
 
         return try {
@@ -85,6 +91,24 @@ class SpotifyClient(
         } catch (_: IllegalArgumentException) {
             Result.Failed
         }
+    }
+
+    private suspend fun embedded(playlistId: String) = try {
+        val request = Request.Builder()
+            .url(SpotifyEmbed.url(playlistId))
+            .header("Accept-Language", "en")
+            .build()
+
+        okHttpClient.newCall(request).executeAsync().use { response ->
+            when (response.isSuccessful) {
+                true -> SpotifyEmbed.parse(response.body?.string().orEmpty())
+                false -> null
+            }
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: IOException) {
+        null
     }
 
     private fun readTracks(items: JsonArray?) = items.orEmpty().mapNotNull { item ->

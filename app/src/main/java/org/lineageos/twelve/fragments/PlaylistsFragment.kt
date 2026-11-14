@@ -211,13 +211,6 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
 
             val playlist = when {
                 spotifyId != null -> {
-                    if (!viewModel.hasSpotifyCredentials) {
-                        Toast.makeText(
-                            context, R.string.import_spotify_credentials, Toast.LENGTH_LONG
-                        ).show()
-                        return@launch
-                    }
-
                     when (val result = viewModel.spotifyPlaylist(spotifyId)) {
                         is SpotifyClient.Result.Success -> result.playlist
 

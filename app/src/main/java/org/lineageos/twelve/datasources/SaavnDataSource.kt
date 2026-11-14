@@ -483,6 +483,10 @@ class SaavnDataSource(
 
                 songs(stored.songIds).map { songs ->
                     Playlist.Builder(playlistUri)
+                        .setThumbnail(
+                            songs.firstNotNullOfOrNull { it.image }
+                                ?.toThumbnail(Thumbnail.Type.FRONT_COVER)
+                        )
                         .setName(stored.name)
                         .setType(Playlist.Type.PLAYLIST)
                         .build() to songs.map { it.toAudio(favorites) }
