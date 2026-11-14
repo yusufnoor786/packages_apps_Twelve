@@ -171,8 +171,13 @@
         <item name="iconGravity">textStart</item>
     </style>
 
+    <style name="TextAppearance.Twelve.HeaderTitle" parent="TextAppearance.Material3.DisplayMedium">
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">-0.02</item>
+    </style>
+
     <!-- App widget -->
     <style name="Theme.Twelve.AppWidgetContainer" parent="Theme.Material3Expressive.DynamicColors.DayNight">
-        <item name="appWidgetRadius">28dp</item>
+        <item name="appWidgetRadius">36dp</item>
     </style>
 </resources>

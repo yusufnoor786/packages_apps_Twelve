@@ -4,6 +4,6 @@
      SPDX-License-Identifier: Apache-2.0
 -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:color="?attr/colorPrimaryContainer" android:state_checked="true" />
-    <item android:color="?attr/colorSurfaceContainerHigh" />
+    <item android:color="?attr/colorPrimary" android:state_checked="true" />
+    <item android:color="?attr/colorSurface" />
 </selector>

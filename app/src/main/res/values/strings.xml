@@ -90,6 +90,12 @@
     <string name="audio_effects">Audio effects</string>
     <string name="playback_speed">Playback speed</string>
     <string name="volume">Volume</string>
+    <string name="widget_idle_title">Nothing playing</string>
+    <string name="widget_idle_subtitle">Tap to pick something</string>
+    <string name="greeting_morning">Good morning</string>
+    <string name="greeting_afternoon">Good afternoon</string>
+    <string name="greeting_evening">Good evening</string>
+    <string name="greeting_night">Late night listening</string>
     <string name="automix">Automix (beta)</string>
     <string name="automix_summary">Songs run into each other like a DJ mix: tempos are matched and the blend lands on a beat. Needs about ten seconds to listen to the songs</string>
     <string name="crossfade">Crossfade</string>

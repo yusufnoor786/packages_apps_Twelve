@@ -646,6 +646,19 @@ class PlaybackService : MediaLibraryService() {
 
         lifecycleScope.launch {
             player.listen { events ->
+                // Songs added while playing (AutoPlay, play next) belong to the queue to resume
+                if (events.containsAny(Player.EVENT_TIMELINE_CHANGED) && player.mediaItemCount > 0) {
+                    val mediaIds = (0 until player.mediaItemCount).map {
+                        player.getMediaItemAt(it).mediaId
+                    }
+                    val index = player.currentMediaItemIndex
+                    val position = player.currentPosition
+
+                    lifecycleScope.launch {
+                        resumptionPlaylistRepository.onMediaItemsChanged(mediaIds, index, position)
+                    }
+                }
+
                 // Update startIndex and startPositionMs in resumption playlist.
                 if (events.containsAny(Player.EVENT_MEDIA_ITEM_TRANSITION)) {
                     lifecycleScope.launch {

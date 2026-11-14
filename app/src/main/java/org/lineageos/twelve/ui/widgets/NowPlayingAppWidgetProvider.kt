@@ -40,8 +40,19 @@ class NowPlayingAppWidgetProvider : BaseAppWidgetProvider<NowPlayingAppWidgetPro
 
                 setOnClickPendingIntent(R.id.linearLayout, openNowPlayingPendingIntent)
 
-                setTextViewText(R.id.titleTextView, mediaMetadata.title ?: "")
-                setTextViewText(R.id.artistNameTextView, mediaMetadata.artist ?: "")
+                // Nothing is queued: say so, the widget still opens the app
+                val hasSong = mediaMetadata.title != null
+                setTextViewText(
+                    R.id.titleTextView,
+                    mediaMetadata.title ?: context.getString(R.string.widget_idle_title)
+                )
+                setTextViewText(
+                    R.id.artistNameTextView,
+                    when (hasSong) {
+                        true -> mediaMetadata.artist ?: ""
+                        false -> context.getString(R.string.widget_idle_subtitle)
+                    }
+                )
 
                 setOnClickPendingIntent(
                     R.id.playPauseImageButton,

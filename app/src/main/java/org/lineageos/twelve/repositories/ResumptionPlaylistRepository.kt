@@ -17,15 +17,23 @@ class ResumptionPlaylistRepository(val database: TwelveDatabase) {
      */
     suspend fun getResumptionPlaylist() =
         database.getResumptionPlaylistDao().getResumptionPlaylistWithItems()?.let {
-            ResumptionPlaylist(
-                it.items.sortedBy { item ->
-                    item.playlistIndex
-                }.map { item ->
-                    item.mediaId
-                },
-                it.resumptionPlaylist.startIndex,
-                it.resumptionPlaylist.startPositionMs,
-            )
+            val mediaIds = it.items.sortedBy { item ->
+                item.playlistIndex
+            }.map { item ->
+                item.mediaId
+            }
+
+            // The queue grows while it plays (AutoPlay), an old index may be past what was stored
+            val startIndex = it.resumptionPlaylist.startIndex
+            when (startIndex in mediaIds.indices) {
+                true -> ResumptionPlaylist(
+                    mediaIds,
+                    startIndex,
+                    it.resumptionPlaylist.startPositionMs,
+                )
+
+                false -> ResumptionPlaylist(mediaIds, 0, 0L)
+            }
         } ?: ResumptionPlaylist(emptyList())
 
     /**

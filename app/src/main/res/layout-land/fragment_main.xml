@@ -13,17 +13,31 @@
         android:id="@+id/appBarLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:background="@drawable/bg_main_header"
         android:fitsSystemWindows="true"
+        app:elevation="0dp"
+        app:liftOnScroll="false"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="@+id/contentCoordinatorLayout"
         app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/greetingTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="12dp"
+            android:alpha="0.75"
+            android:textAppearance="?attr/textAppearanceLabelLarge"
+            android:textColor="?attr/colorOnPrimaryContainer"
+            tools:text="Good evening" />
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:titleTextAppearance="?attr/textAppearanceDisplaySmall"
-            app:titleTextColor="?attr/colorOnSurface"
+            app:titleTextAppearance="@style/TextAppearance.Twelve.HeaderTitle"
+            app:titleTextColor="?attr/colorOnPrimaryContainer"
             tools:title="@string/app_name">
 
             <!-- The actions live in one pill -->

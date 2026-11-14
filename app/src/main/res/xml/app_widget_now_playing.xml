@@ -8,7 +8,7 @@
     android:description="@string/now_playing_widget_description"
     android:initialLayout="@layout/app_widget_now_playing"
     android:minWidth="200dp"
-    android:minHeight="110dp"
+    android:minHeight="130dp"
     android:previewLayout="@layout/app_widget_now_playing"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="4"

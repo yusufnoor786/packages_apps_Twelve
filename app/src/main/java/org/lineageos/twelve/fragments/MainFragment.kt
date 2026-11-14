@@ -9,6 +9,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.TextView
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.LinearLayout
@@ -77,6 +78,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     private val providerMaterialButton by getViewProperty<MaterialButton>(R.id.providerMaterialButton)
     private val refreshMaterialButton by getViewProperty<MaterialButton>(R.id.refreshMaterialButton)
     private val importMaterialButton by getViewProperty<MaterialButton>(R.id.importMaterialButton)
+    private val greetingTextView by getViewProperty<TextView>(R.id.greetingTextView)
 
     private val playlistImporter = PlaylistImporter(this) { viewModel }
     private val searchLinearProgressIndicator by getViewProperty<LinearProgressIndicator>(R.id.searchLinearProgressIndicator)
@@ -360,6 +362,15 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                 viewModel.setOnlineMode(checkedId == R.id.onlineModeButton)
             }
         }
+
+        greetingTextView.setText(
+            when (java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)) {
+                in 5..11 -> R.string.greeting_morning
+                in 12..16 -> R.string.greeting_afternoon
+                in 17..21 -> R.string.greeting_evening
+                else -> R.string.greeting_night
+            }
+        )
 
         importMaterialButton.setOnClickListener {
             playlistImporter.showDialog()
