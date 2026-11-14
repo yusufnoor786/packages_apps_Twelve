@@ -3,11 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.lineageos.generatebp)
+}
+
+// The key the ROM is signed with, read from local.properties (never committed): with it a release
+// APK installs as an update of the Twelve that comes with the ROM
+val romSigning = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
 }
 
 android {
@@ -22,8 +30,21 @@ android {
         versionName = "1.0"
     }
 
+    signingConfigs {
+        romSigning.getProperty("twelve.rom.storeFile")?.let { path ->
+            create("rom") {
+                storeFile = file(path)
+                storePassword = romSigning.getProperty("twelve.rom.storePassword")
+                keyAlias = romSigning.getProperty("twelve.rom.keyAlias")
+                keyPassword = romSigning.getProperty("twelve.rom.keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfigs.findByName("rom")?.let { signingConfig = it }
+
             // Enables code shrinking, obfuscation, and optimization.
             isMinifyEnabled = true
 

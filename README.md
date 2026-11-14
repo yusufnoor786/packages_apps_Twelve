@@ -72,8 +72,32 @@ added.
 ```
 
 The debug build installs as `org.lineageos.twelve.dev`, next to a Twelve that comes with the ROM.
-`./gradlew assembleRelease` builds a shrunk release APK, which needs to be signed before it can be
-installed.
+
+### Updating the Twelve of a ROM with an APK
+
+A release APK signed with the key of the ROM installs over the Twelve that comes with it, like any
+app update: no new ROM build, no root, and the music library, playlists and settings stay.
+
+1. Make a PKCS12 keystore of the key the ROM signs its apps with. For a ROM built with the default
+   test keys these are `build/make/target/product/security/testkey.pk8` and `testkey.x509.pem`:
+   ```
+   openssl pkcs8 -inform DER -nocrypt -in testkey.pk8 -out testkey.key.pem
+   openssl pkcs12 -export -in testkey.x509.pem -inkey testkey.key.pem -name testkey -out testkey.p12
+   ```
+   Keep it outside this repository and delete `testkey.key.pem`.
+2. Tell Gradle where it is in `local.properties` (never committed):
+   ```
+   twelve.rom.storeFile=/path/to/testkey.p12
+   twelve.rom.storePassword=...
+   twelve.rom.keyAlias=testkey
+   twelve.rom.keyPassword=...
+   ```
+3. Build with `./gradlew assembleRelease`. `app/build/outputs/apk/release/app-release.apk` installs
+   on any phone running the ROM.
+
+The version code must never be lower than the one of the ROM (`app/Android.bp`). Without these
+settings the release APK is not signed and cannot be installed. A factory reset, or "Uninstall
+updates" in the app info, goes back to the version of the ROM.
 
 ## Credits
 
