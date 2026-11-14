@@ -7,8 +7,11 @@ package org.lineageos.twelve.datasources.lyrics
 
 import android.util.Base64
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -38,6 +41,27 @@ data class LyricsQuery(
     val durationMs: Long?,
 ) {
     val durationSeconds get() = durationMs?.let { (it / 1000).toString() }
+
+    /**
+     * The song as the databases know it. The catalog this app plays from files songs as
+     * "Tum Kya Mile (From \"Rocky Aur Rani\")" by "A, B, C", lyrics databases know "Tum Kya Mile"
+     * by its first artist.
+     */
+    fun forSearch() = copy(
+        title = title.cleanTitle(),
+        artist = artist?.split(',', '&', ';')?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() },
+    )
+}
+
+private val TITLE_PACKAGING = listOf(
+    Regex("""\s*[(\[]\s*(from|feat|ft|featuring|with|original|official)\b[^)\]]*[)\]]""", RegexOption.IGNORE_CASE),
+    Regex("""\s+-\s+(from|feat|ft|featuring|original|official)\b.*$""", RegexOption.IGNORE_CASE),
+)
+
+private fun String.cleanTitle(): String {
+    var name = this
+    TITLE_PACKAGING.forEach { name = it.replace(name, " ") }
+    return name.replace(Regex("""\s+"""), " ").trim().ifBlank { trim() }
 }
 
 /**
@@ -363,67 +387,63 @@ internal class KuGouProvider(private val http: LyricsHttp) : LyricsProvider {
 }
 
 /**
- * Asks the providers for lyrics: the ones that know word timings first, because those make the
- * best lyrics, then the line synchronized ones.
+ * Asks all the providers at the same time and hands out what they find as it arrives, better
+ * lyrics replace worse ones: word synchronized, then line synchronized, then plain. The first
+ * thing found is on screen as soon as the fastest provider answers.
  */
 internal class LyricsProviders(okHttpClient: OkHttpClient) {
     private val http = LyricsHttp(okHttpClient)
 
-    private val wordProviders = listOf<LyricsProvider>(
+    private val providers = listOf<LyricsProvider>(
         LrcRedProvider(http),
         BetterLyricsProvider(http),
         LyricsPlusProvider(http),
-    )
-
-    private val lineProviders = listOf<LyricsProvider>(
         LrclibProvider(http),
         UnisonProvider(http),
         KuGouProvider(http),
     )
 
-    suspend fun fetch(query: LyricsQuery): Lyrics? {
-        val word = firstOf(wordProviders, query) { lyrics ->
-            lyrics.lines.any { it.words.isNotEmpty() }
-        }
-        if (word != null) {
-            return word
-        }
+    fun fetch(rawQuery: LyricsQuery): Flow<Lyrics> = channelFlow {
+        val query = rawQuery.forSearch()
+        val lock = Mutex()
+        var bestRank = 0
 
-        val synced = firstOf(lineProviders, query) { lyrics ->
-            lyrics.lines.any { it.durationMs != null }
-        }
-        if (synced != null) {
-            return synced
-        }
-
-        // Anything is better than nothing
-        return firstOf(lineProviders, query) { true }
-    }
-
-    /**
-     * The result of the first provider (in order) that has something good enough, providers are
-     * asked at the same time.
-     */
-    private suspend fun firstOf(
-        providers: List<LyricsProvider>,
-        query: LyricsQuery,
-        accept: (Lyrics) -> Boolean,
-    ): Lyrics? = coroutineScope {
-        providers.map { provider ->
-            async {
-                try {
+        providers.forEach { provider ->
+            launch {
+                val lyrics = try {
                     withTimeoutOrNull(PROVIDER_TIMEOUT_MS) { provider.fetch(query) }
-                        ?.takeIf { it.lines.isNotEmpty() && accept(it) }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
                     null
+                } ?: return@launch
+
+                val rank = rank(lyrics)
+                if (lyrics.lines.isEmpty() || rank == 0) {
+                    return@launch
+                }
+
+                lock.withLock {
+                    if (rank > bestRank) {
+                        bestRank = rank
+                        send(lyrics)
+                    }
                 }
             }
-        }.firstNotNullOfOrNull { it.await() }
+        }
     }
 
     companion object {
-        private const val PROVIDER_TIMEOUT_MS = 10_000L
+        private const val PROVIDER_TIMEOUT_MS = 7_000L
+
+        /**
+         * How good lyrics are: 3 for word timings, 2 for line timings, 1 for plain text.
+         */
+        fun rank(lyrics: Lyrics) = when {
+            lyrics.lines.any { it.words.isNotEmpty() } -> 3
+            lyrics.lines.any { it.durationMs != null } -> 2
+            lyrics.lines.isNotEmpty() -> 1
+            else -> 0
+        }
     }
 }

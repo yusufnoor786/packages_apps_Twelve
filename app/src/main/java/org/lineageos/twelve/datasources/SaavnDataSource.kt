@@ -528,18 +528,25 @@ class SaavnDataSource(
     override fun lyrics(audioUri: Uri): Flow<Result<org.lineageos.twelve.models.Lyrics, Error>> =
         flow {
             val song = audioUri.lastPathSegment?.let { song(it) }
+            if (song == null) {
+                emit(Result.Failure(Error.NOT_FOUND))
+                return@flow
+            }
 
-            emit(
-                when (song) {
-                    null -> Result.Failure(Error.NOT_FOUND)
-                    else -> lyricsClient.lyrics(
-                        song.title,
-                        song.artists.firstOrNull()?.name,
-                        song.albumName,
-                        song.durationSeconds,
-                    )
-                }
-            )
+            var found = false
+            lyricsClient.lyrics(
+                song.title,
+                song.artists.firstOrNull()?.name,
+                song.albumName,
+                song.durationSeconds,
+            ).collect {
+                found = true
+                emit(Result.Success(it))
+            }
+
+            if (!found) {
+                emit(Result.Failure(Error.NOT_FOUND))
+            }
         }.flowOn(Dispatchers.IO)
 
     // Playlists management

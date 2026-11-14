@@ -327,29 +327,37 @@
 
         </FrameLayout>
 
-        <include
-            android:id="@+id/progressSliderLinearLayout"
-            layout="@layout/now_playing_progress_slider"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <include
-            android:id="@+id/mediaControlsLinearLayout"
-            layout="@layout/now_playing_media_controls"
+        <!-- Hidden while lyrics are read, they get the whole screen then -->
+        <LinearLayout
+            android:id="@+id/controlsLinearLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="22dp"
-            android:layout_marginTop="8dp" />
+            android:orientation="vertical">
 
-        <include
-            android:id="@+id/bottomBarLinearLayout"
-            layout="@layout/now_playing_bottom_bar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginHorizontal="8dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="16dp" />
+            <include
+                android:id="@+id/progressSliderLinearLayout"
+                layout="@layout/now_playing_progress_slider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <include
+                android:id="@+id/mediaControlsLinearLayout"
+                layout="@layout/now_playing_media_controls"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="22dp"
+                android:layout_marginTop="8dp" />
+
+            <include
+                android:id="@+id/bottomBarLinearLayout"
+                layout="@layout/now_playing_bottom_bar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="16dp" />
+        </LinearLayout>
 
     </LinearLayout>
 

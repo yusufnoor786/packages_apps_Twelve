@@ -61,6 +61,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     // Views
     private val frameLayout by lazy { findViewById<FrameLayout>(R.id.linearLayout) }
+    private var rawWindowInsets: WindowInsetsCompat? = null
+
     private val nowPlayingContainer by lazy { findViewById<FrameLayout>(R.id.nowPlayingContainer) }
     private val nowPlayingBar by lazy { findViewById<NowPlayingBar>(R.id.nowPlayingBar) }
 
@@ -93,6 +95,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             )
 
             systemInsets = insets
+            rawWindowInsets = windowInsets
             updateNowPlayingBarPlacement()
 
             // This translates to bottom padding + space taken by the floating now playing bar.
@@ -113,6 +116,12 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                 )
                 .setInsets(WindowInsetsCompat.Type.navigationBars(), navigationBarsInsets)
                 .build()
+        }
+
+        // The player covers the mini player, it needs the plain insets and not the space reserved
+        // for the mini player
+        ViewCompat.setOnApplyWindowInsetsListener(nowPlayingContainer) { _, windowInsets ->
+            rawWindowInsets ?: windowInsets
         }
 
         // Keep the floating now playing bar above the navigation bar of the main screen

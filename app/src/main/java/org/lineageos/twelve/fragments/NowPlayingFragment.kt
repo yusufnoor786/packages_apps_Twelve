@@ -47,6 +47,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.transition.Fade
 import androidx.transition.TransitionManager
 import androidx.transition.TransitionSet
+import androidx.transition.ChangeBounds
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -156,6 +157,7 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
     private val modeLinearLayout by getViewProperty<LinearLayout?>(R.id.modeLinearLayout)
     private val optionsMaterialButton by getViewProperty<MaterialButton?>(R.id.optionsMaterialButton)
     private val playerRootLinearLayout by getViewProperty<LinearLayout?>(R.id.playerRootLinearLayout)
+    private val controlsLinearLayout by getViewProperty<LinearLayout?>(R.id.controlsLinearLayout)
     private val queueLinearLayout by getViewProperty<LinearLayout?>(R.id.queueLinearLayout)
     private val queueRecyclerView by getViewProperty<RecyclerView?>(R.id.queueRecyclerView)
     private val topFrameLayout by getViewProperty<FrameLayout?>(R.id.topFrameLayout)
@@ -176,10 +178,59 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
     // Lyrics
     private val lyricsAdapter by lazy {
         LyricsAdapter { line ->
-            line.durationMs?.let { viewModel.seekToPosition(it.first) }
+            when (controlsHidden) {
+                true -> setControlsHidden(false)
+                false -> line.durationMs?.let { viewModel.seekToPosition(it.first) }
+            }
         }
     }
     private var lyricsCurrentIndex: Int? = null
+
+    // The controls leave while lyrics are read and playback runs, and return on a tap
+    private var controlsHidden = false
+    private var isPlayingNow = false
+    private val hideControls = Runnable { setControlsHidden(true) }
+
+    private fun setControlsHidden(hidden: Boolean, animate: Boolean = true) {
+        val controls = controlsLinearLayout ?: return
+        val root = playerRootLinearLayout ?: return
+
+        handler.removeCallbacks(hideControls)
+
+        val target = hidden && mode == Mode.LYRICS && isPlayingNow
+        if (target == controlsHidden) {
+            if (!target) {
+                scheduleHideControls()
+            }
+            return
+        }
+
+        controlsHidden = target
+
+        if (animate) {
+            TransitionManager.beginDelayedTransition(
+                root,
+                TransitionSet().apply {
+                    ordering = TransitionSet.ORDERING_TOGETHER
+                    addTransition(ChangeBounds())
+                    addTransition(Fade())
+                    duration = CONTROLS_TRANSITION_MS
+                }
+            )
+        }
+        controls.isVisible = !target
+
+        if (!target) {
+            scheduleHideControls()
+        }
+    }
+
+    private fun scheduleHideControls() {
+        handler.removeCallbacks(hideControls)
+        if (mode == Mode.LYRICS && isPlayingNow) {
+            handler.postDelayed(hideControls, CONTROLS_HIDE_DELAY_MS)
+        }
+    }
 
     private val sharedPreferences by lazy {
         PreferenceManager.getDefaultSharedPreferences(requireContext())
@@ -203,7 +254,7 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
                 val positionMs = playerPositionMs + sharedPreferences.lyricsOffsetMs
                 lyricsAdapter.setPosition(positionMs)
 
-                val index = focusedLineAt(positionMs)
+                val index = focusedLineAt(positionMs + LYRICS_FOCUS_LEAD_MS)
                 if (index != lyricsCurrentIndex) {
                     lyricsCurrentIndex = index
                     lyricsAdapter.submit(lyricsLines, index)
@@ -552,6 +603,12 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         // Swiping the cover up opens the queue
         setupCoverSwipe()
 
+        modeLinearLayout?.setOnClickListener {
+            if (controlsHidden) {
+                setControlsHidden(false)
+            }
+        }
+
         lyricsRecyclerView?.let { recyclerView ->
             recyclerView.adapter = lyricsAdapter
 
@@ -613,6 +670,12 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.isPlaying.collectLatest { isPlaying ->
+                        isPlayingNow = isPlaying
+                        // Paused: the controls come back and stay
+                        when (isPlaying) {
+                            false -> setControlsHidden(false)
+                            true -> scheduleHideControls()
+                        }
                         playPauseMaterialButton.setIconResource(
                             when (isPlaying) {
                                 true -> R.drawable.ic_pause
@@ -950,6 +1013,7 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         isLyricsFrameLoopRunning = false
         Choreographer.getInstance().removeFrameCallback(lyricsFrameCallback)
         handler.removeCallbacks(resumeLyricsFollowing)
+        handler.removeCallbacks(hideControls)
         lyricsRecyclerView?.adapter = null
         queueItemTouchHelper.attachToRecyclerView(null)
         queueRecyclerView?.adapter = null
@@ -1161,7 +1225,10 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         }
 
         val index = currentIndex ?: 0
-        currentLyricsTextView.text = lines.getOrNull(index)?.text
+        // Instrumental gaps are lines without text, show the next line that has some
+        currentLyricsTextView.text = lines.drop(index.coerceAtLeast(0))
+            .firstOrNull { it.text.isNotBlank() }?.text
+            ?: lines.getOrNull(index)?.text
         lyricsPreviewLinearLayout?.isVisible = hasLyrics
 
         lyricsMaterialCardView?.isVisible = hasLyrics
@@ -1255,6 +1322,15 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
             else -> mode
         }
 
+        // The controls are only ever away while lyrics are shown
+        if (mode != Mode.LYRICS) {
+            handler.removeCallbacks(hideControls)
+            controlsHidden = false
+            controlsLinearLayout?.isVisible = true
+        } else {
+            scheduleHideControls()
+        }
+
         nestedScrollView.isVisible = mode == Mode.PLAYER
         modeLinearLayout?.isVisible = mode != Mode.PLAYER
         lyricsRecyclerView?.isVisible = mode == Mode.LYRICS
@@ -1296,6 +1372,11 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         private val LOG_TAG = NowPlayingFragment::class.simpleName!!
 
         private const val STATE_MODE = "mode"
+
+        // A line takes the focus a moment before it is sung, its animation is done when it starts
+        private const val LYRICS_FOCUS_LEAD_MS = 120L
+        private const val CONTROLS_HIDE_DELAY_MS = 3500L
+        private const val CONTROLS_TRANSITION_MS = 320L
 
         private const val LYRICS_OFFSET_MIN_MS = -2000f
         private const val LYRICS_OFFSET_MAX_MS = 2000f
