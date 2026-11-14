@@ -146,6 +146,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             nowPlayingContainer.isVisible = true
             isNowPlayingOpenFlow.value = true
             nowPlayingBackCallback.isEnabled = true
+            setNowPlayingBarCovered(true)
         }
 
         nowPlayingBar.setOnPlayPauseClickListener {
@@ -354,6 +355,17 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     }
 
     private var isNowPlayingOpen = false
+
+    /**
+     * The mini player lies under the player and the player is see-through at places, it is hidden
+     * while the player covers the screen and shown as soon as the player moves away.
+     */
+    fun setNowPlayingBarCovered(covered: Boolean) {
+        nowPlayingBar.alpha = when (covered) {
+            true -> 0f
+            false -> 1f
+        }
+    }
     private val isNowPlayingOpenFlow = MutableStateFlow(false)
 
     private val nowPlayingBackCallback = object : OnBackPressedCallback(false) {
@@ -384,10 +396,12 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             .replace(R.id.nowPlayingContainer, NowPlayingFragment())
             .commitNow()
 
+        setNowPlayingBarCovered(false)
         nowPlayingContainer.animate()
             .translationY(0f)
             .setDuration(OPEN_ANIMATION_MS)
             .setInterpolator(DecelerateInterpolator(1.6f))
+            .withEndAction { if (isNowPlayingOpen) setNowPlayingBarCovered(true) }
             .start()
     }
 
@@ -404,6 +418,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         isNowPlayingOpen = false
         isNowPlayingOpenFlow.value = false
         nowPlayingBackCallback.isEnabled = false
+        setNowPlayingBarCovered(false)
 
         val finish = {
             supportFragmentManager.findFragmentById(R.id.nowPlayingContainer)?.let {

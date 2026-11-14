@@ -33,6 +33,11 @@ class SwipeToDismissLayout @JvmOverloads constructor(
     var onDismissed: (() -> Unit)? = null
 
     /**
+     * Called whenever the layout moved away from its place, with how far it is.
+     */
+    var onOffsetChanged: ((Float) -> Unit)? = null
+
+    /**
      * Whether a drag that starts with this touch may dismiss the layout. Lets scrollable
      * content keep its own vertical gestures.
      */
@@ -169,6 +174,7 @@ class SwipeToDismissLayout @JvmOverloads constructor(
         val progress = (offset / height.coerceAtLeast(1)).coerceIn(0f, 1f)
 
         translationY = offset
+        onOffsetChanged?.invoke(offset)
         scaleX = 1f - progress * SHRINK
         scaleY = 1f - progress * SHRINK
         alpha = 1f - progress * FADE
