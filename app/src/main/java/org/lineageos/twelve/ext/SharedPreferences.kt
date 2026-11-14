@@ -65,7 +65,7 @@ var SharedPreferences.enableFloatOutput: Boolean
     }
 
 private const val STOP_PLAYBACK_ON_TASK_REMOVED_KEY = "stop_playback_on_task_removed"
-private const val STOP_PLAYBACK_ON_TASK_REMOVED_DEFAULT = true
+private const val STOP_PLAYBACK_ON_TASK_REMOVED_DEFAULT = false
 var SharedPreferences.stopPlaybackOnTaskRemoved: Boolean
     get() = getBoolean(STOP_PLAYBACK_ON_TASK_REMOVED_KEY, STOP_PLAYBACK_ON_TASK_REMOVED_DEFAULT)
     set(value) = edit {

@@ -31,7 +31,7 @@
             app:title="@string/enable_float_output" />
 
         <SwitchPreference
-            app:defaultValue="true"
+            app:defaultValue="false"
             app:iconSpaceReserved="false"
             app:key="stop_playback_on_task_removed"
             app:summary="@string/stop_playback_on_task_removed_summary"
