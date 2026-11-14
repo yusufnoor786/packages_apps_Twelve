@@ -62,6 +62,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.slider.Slider
 import org.lineageos.twelve.ext.lyricsOffsetMs
+import org.lineageos.twelve.ext.onlineMode
 import com.google.android.material.transition.MaterialContainerTransform
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
@@ -879,13 +880,7 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
 
                         hiResImageView.isVisible = outputConfiguration?.verdict?.hiRes == true
 
-                        losslessTextView.isVisible =
-                            when (outputConfiguration?.source?.compression) {
-                                OutputConfiguration.Compression.LOSSLESS,
-                                OutputConfiguration.Compression.UNCOMPRESSED -> true
-
-                                else -> false
-                            }
+                        updateQualityTag(outputConfiguration)
 
                         potentialIssuesImageView.isVisible =
                             outputConfiguration?.verdict?.potentialIssues?.isNotEmpty() == true
@@ -1173,6 +1168,33 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
             .setView(container)
             .setPositiveButton(android.R.string.ok, null)
             .show()
+    }
+
+    /**
+     * The quality of what is playing, said plainly: lossless where it is, and for online songs the
+     * bitrate of the lossy stream they are served as.
+     */
+    private fun updateQualityTag(outputConfiguration: OutputConfiguration?) {
+        val source = outputConfiguration?.source
+        val bitrateKbps = (source?.averageBitrateBps ?: source?.peakBitrateBps)?.let { it / 1000 }
+
+        val text = when (source?.compression) {
+            OutputConfiguration.Compression.LOSSLESS,
+            OutputConfiguration.Compression.UNCOMPRESSED -> getString(
+                R.string.audio_format_compression_lossless
+            )
+
+            OutputConfiguration.Compression.LOSSY ->
+                when (sharedPreferences.onlineMode && bitrateKbps != null && bitrateKbps > 0) {
+                    true -> getString(R.string.quality_lossy_kbps, bitrateKbps)
+                    false -> null
+                }
+
+            null -> null
+        }
+
+        losslessTextView.text = text
+        losslessTextView.isVisible = text != null
     }
 
     private fun closePlayer() {

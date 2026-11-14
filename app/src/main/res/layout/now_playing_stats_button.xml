@@ -68,6 +68,7 @@
             android:layout_marginStart="6dp"
             android:gravity="center"
             android:text="@string/audio_format_compression_lossless"
+            android:maxLines="1"
             android:textAlignment="gravity"
             android:textAppearance="?attr/textAppearanceLabelMedium"
             android:textColor="?attr/colorPrimary"
