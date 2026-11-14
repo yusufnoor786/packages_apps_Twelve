@@ -6,6 +6,12 @@
 package org.lineageos.twelve.fragments
 
 import android.content.Intent
+import kotlin.math.roundToInt
+import androidx.core.content.ContextCompat
+import android.media.AudioManager
+import android.content.IntentFilter
+import android.content.Context
+import android.content.BroadcastReceiver
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Rect
@@ -124,6 +130,7 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
     private val durationTimestampTextView by getViewProperty<TextView>(R.id.durationTimestampTextView)
     private val fileTypeTextView by getViewProperty<TextView>(R.id.fileTypeTextView)
     private val hiResImageView by getViewProperty<ImageView>(R.id.hiResImageView)
+    private val losslessTextView by getViewProperty<TextView>(R.id.losslessTextView)
     private val isFavoriteMaterialButton by getViewProperty<MaterialButton>(R.id.isFavoriteMaterialButton)
     private val linearProgressIndicator by getViewProperty<LinearProgressIndicator>(R.id.linearProgressIndicator)
     private val lyricsToggleMaterialButton by getViewProperty<MaterialButton>(R.id.lyricsToggleMaterialButton)
@@ -158,6 +165,34 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
     private val optionsMaterialButton by getViewProperty<MaterialButton?>(R.id.optionsMaterialButton)
     private val playerRootLinearLayout by getViewProperty<LinearLayout?>(R.id.playerRootLinearLayout)
     private val controlsLinearLayout by getViewProperty<LinearLayout?>(R.id.controlsLinearLayout)
+    private val volumeSlider by getViewProperty<Slider?>(R.id.volumeSlider)
+
+    // Volume
+    private val audioManager by lazy { requireContext().getSystemService(AudioManager::class.java) }
+    private val volumeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            syncVolumeSlider()
+        }
+    }
+    private var isVolumeReceiverRegistered = false
+
+    /**
+     * Put the slider where the music volume is, the buttons of the phone change it too.
+     */
+    private fun syncVolumeSlider() {
+        val slider = volumeSlider ?: return
+        val manager = audioManager ?: return
+
+        val max = manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).toFloat()
+        if (max <= 0f) {
+            return
+        }
+
+        if (slider.valueTo != max) {
+            slider.valueTo = max
+        }
+        slider.value = manager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat().coerceIn(0f, max)
+    }
     private val queueLinearLayout by getViewProperty<LinearLayout?>(R.id.queueLinearLayout)
     private val queueRecyclerView by getViewProperty<RecyclerView?>(R.id.queueRecyclerView)
     private val topFrameLayout by getViewProperty<FrameLayout?>(R.id.topFrameLayout)
@@ -550,6 +585,22 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
             }
         }
 
+        // Volume, like the buttons of the phone
+        volumeSlider?.apply {
+            isTickVisible = false
+            setLabelFormatter { it.roundToInt().toString() }
+            addOnChangeListener { _, value, fromUser ->
+                if (fromUser) {
+                    audioManager?.setStreamVolume(
+                        AudioManager.STREAM_MUSIC,
+                        value.roundToInt(),
+                        0,
+                    )
+                }
+            }
+        }
+        syncVolumeSlider()
+
         // Bottom bar buttons
         queueMaterialButton.setOnClickListener {
             when (queueRecyclerView) {
@@ -828,6 +879,14 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
 
                         hiResImageView.isVisible = outputConfiguration?.verdict?.hiRes == true
 
+                        losslessTextView.isVisible =
+                            when (outputConfiguration?.source?.compression) {
+                                OutputConfiguration.Compression.LOSSLESS,
+                                OutputConfiguration.Compression.UNCOMPRESSED -> true
+
+                                else -> false
+                            }
+
                         potentialIssuesImageView.isVisible =
                             outputConfiguration?.verdict?.potentialIssues?.isNotEmpty() == true
                     }
@@ -988,6 +1047,28 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        ContextCompat.registerReceiver(
+            requireContext(),
+            volumeReceiver,
+            IntentFilter(VOLUME_CHANGED_ACTION),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        isVolumeReceiverRegistered = true
+        syncVolumeSlider()
+    }
+
+    override fun onStop() {
+        if (isVolumeReceiverRegistered) {
+            requireContext().unregisterReceiver(volumeReceiver)
+            isVolumeReceiverRegistered = false
+        }
+
+        super.onStop()
     }
 
     override fun onResume() {
@@ -1372,6 +1453,8 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         private val LOG_TAG = NowPlayingFragment::class.simpleName!!
 
         private const val STATE_MODE = "mode"
+
+        private const val VOLUME_CHANGED_ACTION = "android.media.VOLUME_CHANGED_ACTION"
 
         // A line takes the focus a moment before it is sung, its animation is done when it starts
         private const val LYRICS_FOCUS_LEAD_MS = 120L

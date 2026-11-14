@@ -61,6 +61,20 @@
             android:textColor="?attr/colorOnSurface"
             tools:text="FLAC" />
 
+        <TextView
+            android:id="@+id/losslessTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginStart="6dp"
+            android:gravity="center"
+            android:text="@string/audio_format_compression_lossless"
+            android:textAlignment="gravity"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:textColor="?attr/colorPrimary"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>
