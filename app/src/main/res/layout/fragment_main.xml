@@ -26,16 +26,46 @@
             app:titleTextColor="?attr/colorOnSurface"
             tools:title="@string/app_name">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/settingsMaterialButton"
-                style="?attr/materialIconButtonFilledTonalStyle"
+            <!-- The actions live in one pill -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
                 android:layout_marginEnd="16dp"
-                android:contentDescription="@string/title_activity_settings"
-                android:tooltipText="@string/title_activity_settings"
-                app:icon="@drawable/ic_settings" />
+                android:background="@drawable/bg_header_actions"
+                android:orientation="horizontal"
+                android:padding="4dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/refreshMaterialButton"
+                    style="?attr/materialIconButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/refresh"
+                    android:tooltipText="@string/refresh"
+                    android:visibility="gone"
+                    app:icon="@drawable/ic_sync" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/importMaterialButton"
+                    style="?attr/materialIconButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/import_playlist"
+                    android:tooltipText="@string/import_playlist"
+                    android:visibility="gone"
+                    app:icon="@drawable/ic_playlist_add" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/settingsMaterialButton"
+                    style="?attr/materialIconButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/title_activity_settings"
+                    android:tooltipText="@string/title_activity_settings"
+                    app:icon="@drawable/ic_settings" />
+
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/providerMaterialButton"
@@ -43,65 +73,50 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
+                android:layout_marginEnd="8dp"
                 tools:icon="@drawable/ic_shelves"
                 tools:text="Pixel 7 Pro" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/importMaterialButton"
-                style="?attr/materialIconButtonFilledTonalStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:layout_marginEnd="8dp"
-                android:contentDescription="@string/import_playlist"
-                android:tooltipText="@string/import_playlist"
-                android:visibility="gone"
-                app:icon="@drawable/ic_playlist_add" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/refreshMaterialButton"
-                style="?attr/materialIconButtonFilledTonalStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:layout_marginEnd="8dp"
-                android:contentDescription="@string/refresh"
-                android:tooltipText="@string/refresh"
-                android:visibility="gone"
-                app:icon="@drawable/ic_sync" />
 
         </com.google.android.material.appbar.MaterialToolbar>
 
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/modeToggleGroup"
+            style="@style/Widget.Material3Expressive.MaterialButtonToggleGroup"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="4dp"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="8dp"
-            style="@style/Widget.Material3Expressive.MaterialButtonToggleGroup"
+            android:layout_marginBottom="12dp"
             android:contentDescription="@string/mode_switch_description"
             app:selectionRequired="true"
             app:singleSelection="true">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/offlineModeButton"
-                style="?attr/materialButtonOutlinedStyle"
+                style="?attr/materialButtonTonalStyle"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:layout_weight="1"
                 android:text="@string/mode_offline"
-                app:icon="@drawable/ic_smartphone" />
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textColor="@color/mode_toggle_foreground"
+                app:backgroundTint="@color/mode_toggle_background"
+                app:icon="@drawable/ic_smartphone"
+                app:iconTint="@color/mode_toggle_foreground" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/onlineModeButton"
-                style="?attr/materialButtonOutlinedStyle"
+                style="?attr/materialButtonTonalStyle"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:layout_weight="1"
                 android:text="@string/mode_online"
-                app:icon="@drawable/ic_cloud" />
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textColor="@color/mode_toggle_foreground"
+                app:backgroundTint="@color/mode_toggle_background"
+                app:icon="@drawable/ic_cloud"
+                app:iconTint="@color/mode_toggle_foreground" />
 
         </com.google.android.material.button.MaterialButtonToggleGroup>
 

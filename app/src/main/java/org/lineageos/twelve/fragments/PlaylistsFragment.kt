@@ -92,6 +92,7 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
                     }
                     view.setOnLongClickListener(null)
 
+                    view.setExpressiveCard(highlighted = true)
                     view.setLeadingIconImage(R.drawable.ic_playlist_add)
                     view.setHeadlineText(R.string.create_playlist)
                 }
@@ -111,7 +112,9 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
                         true
                     }
 
-                    view.setLeadingIconImage(
+                    view.setExpressiveCard()
+                    view.setLeadingCover(
+                        item.thumbnail,
                         when (item.type) {
                             Playlist.Type.PLAYLIST -> R.drawable.ic_playlist_play
                             Playlist.Type.FAVORITES -> R.drawable.ic_favorite

@@ -319,15 +319,26 @@ class SaavnDataSource(
         providerIdentifier: ProviderIdentifier,
         sortingRule: SortingRule,
     ): Flow<MediaRequestStatus<List<Playlist>>> = withLibrary { library ->
+        // The cover of a playlist is the one of its first song
+        suspend fun coverOf(songIds: List<String>) = songIds.firstOrNull()
+            ?.let { song(it) }?.image?.toThumbnail(Thumbnail.Type.FRONT_COVER)
+
         Result.Success(
             buildList {
-                add(favoritesPlaylist)
+                add(
+                    Playlist.Builder(favoritesUri)
+                        .setName(favoritesPlaylist.name)
+                        .setType(Playlist.Type.FAVORITES)
+                        .setThumbnail(coverOf(library.favorites))
+                        .build()
+                )
 
                 addAll(
                     library.playlists.sortedByDescending { it.modifiedAt }.map {
                         Playlist.Builder(userPlaylistUri(it.id))
                             .setName(it.name)
                             .setType(Playlist.Type.PLAYLIST)
+                            .setThumbnail(coverOf(it.songIds))
                             .build()
                     }
                 )

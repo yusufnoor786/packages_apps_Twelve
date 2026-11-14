@@ -8,6 +8,7 @@ package org.lineageos.twelve.fragments
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -34,7 +35,8 @@ import org.lineageos.twelve.models.SortingStrategy
 import org.lineageos.twelve.ui.views.PullToRefreshLayout
 import org.lineageos.twelve.ui.recyclerview.SimpleListAdapter
 import org.lineageos.twelve.ui.recyclerview.UniqueItemDiffCallback
-import org.lineageos.twelve.ui.views.ListItem
+import org.lineageos.twelve.ui.recyclerview.DisplayAwareGridLayoutManager
+import org.lineageos.twelve.ui.views.GenreTileView
 import org.lineageos.twelve.ui.views.SortingChip
 import org.lineageos.twelve.utils.PermissionsChecker
 import org.lineageos.twelve.utils.PermissionsUtils
@@ -56,12 +58,16 @@ class GenresFragment : Fragment(R.layout.fragment_genres) {
 
     // Recyclerview
     private val adapter by lazy {
-        object : SimpleListAdapter<Genre, ListItem>(
+        object : SimpleListAdapter<Genre, GenreTileView>(
             UniqueItemDiffCallback(),
-            ::ListItem,
+            ::GenreTileView,
         ) {
             override fun ViewHolder.onPrepareView() {
-                view.setLeadingIconImage(R.drawable.ic_genres)
+                val margin = (6 * view.resources.displayMetrics.density).toInt()
+                view.layoutParams = RecyclerView.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ).also { it.setMargins(margin, margin, margin, margin) }
             }
 
             override fun ViewHolder.onBindView(item: Genre) {
@@ -79,9 +85,7 @@ class GenresFragment : Fragment(R.layout.fragment_genres) {
                     true
                 }
 
-                item.name?.also {
-                    view.headlineText = it
-                } ?: view.setHeadlineText(R.string.unknown)
+                view.setGenre(item.name)
             }
         }
     }
@@ -120,6 +124,7 @@ class GenresFragment : Fragment(R.layout.fragment_genres) {
             viewModel.setSortingRule(it)
         }
 
+        recyclerView.layoutManager = DisplayAwareGridLayoutManager(recyclerView.context, 2)
         recyclerView.adapter = adapter
 
         pullToRefreshLayout.onRefresh = { viewModel.refreshContent() }

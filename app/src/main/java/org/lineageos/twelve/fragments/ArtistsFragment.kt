@@ -34,7 +34,8 @@ import org.lineageos.twelve.models.SortingStrategy
 import org.lineageos.twelve.ui.views.PullToRefreshLayout
 import org.lineageos.twelve.ui.recyclerview.SimpleListAdapter
 import org.lineageos.twelve.ui.recyclerview.UniqueItemDiffCallback
-import org.lineageos.twelve.ui.views.ListItem
+import org.lineageos.twelve.ui.recyclerview.DisplayAwareGridLayoutManager
+import org.lineageos.twelve.ui.views.ArtistCircleItemView
 import org.lineageos.twelve.ui.views.SortingChip
 import org.lineageos.twelve.utils.PermissionsChecker
 import org.lineageos.twelve.utils.PermissionsUtils
@@ -56,15 +57,13 @@ class ArtistsFragment : Fragment(R.layout.fragment_artists) {
 
     // Recyclerview
     private val adapter by lazy {
-        object : SimpleListAdapter<Artist, ListItem>(
+        object : SimpleListAdapter<Artist, ArtistCircleItemView>(
             UniqueItemDiffCallback(),
-            ::ListItem,
+            ::ArtistCircleItemView,
         ) {
-            override fun ViewHolder.onPrepareView() {
-                view.setLeadingIconImage(R.drawable.ic_person)
-            }
-
             override fun ViewHolder.onBindView(item: Artist) {
+                view.setItem(item)
+
                 view.setOnClickListener {
                     findNavController().navigateSafe(
                         R.id.action_mainFragment_to_fragment_artist,
@@ -79,9 +78,6 @@ class ArtistsFragment : Fragment(R.layout.fragment_artists) {
                     true
                 }
 
-                item.name?.also {
-                    view.headlineText = it
-                } ?: view.setHeadlineText(R.string.unknown)
             }
         }
     }
@@ -121,6 +117,7 @@ class ArtistsFragment : Fragment(R.layout.fragment_artists) {
             viewModel.setSortingRule(it)
         }
 
+        recyclerView.layoutManager = DisplayAwareGridLayoutManager(recyclerView.context, 3)
         recyclerView.adapter = adapter
 
         pullToRefreshLayout.onRefresh = { viewModel.refreshContent() }

@@ -207,6 +207,35 @@ class ListItem @JvmOverloads constructor(
     fun setLeadingIconImage(uri: Uri) = leadingIconImageView.setImageAndUpdateVisibility(uri)
 
     /**
+     * Make the item a rounded card on a tonal surface, with room around it.
+     *
+     * @param highlighted Whether the card uses the accent container instead of the neutral one
+     */
+    fun setExpressiveCard(highlighted: Boolean = false) {
+        val density = resources.displayMetrics.density
+
+        radius = 28 * density
+        cardElevation = 0f
+        strokeWidth = 0
+        setCardBackgroundColor(
+            com.google.android.material.color.MaterialColors.getColor(
+                this,
+                when (highlighted) {
+                    true -> com.google.android.material.R.attr.colorPrimaryContainer
+                    false -> com.google.android.material.R.attr.colorSurfaceContainerLow
+                }
+            )
+        )
+
+        val margin = (4 * density).toInt()
+        val sides = (12 * density).toInt()
+        layoutParams = androidx.recyclerview.widget.RecyclerView.LayoutParams(
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).also { it.setMargins(sides, margin, sides, margin) }
+    }
+
+    /**
      * Show the cover of an item in place of the leading icon, in a rounded square.
      *
      * @param placeholder Shown while the cover loads and when there is none
