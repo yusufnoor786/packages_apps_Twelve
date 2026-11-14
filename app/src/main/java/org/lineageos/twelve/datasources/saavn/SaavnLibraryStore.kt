@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.serializer
 import kotlinx.serialization.json.Json
 import java.io.File
 
@@ -137,9 +138,9 @@ class SaavnLibraryStore(
     private fun save(library: StoredLibrary) {
         runCatching {
             val temporary = File(file.parentFile, file.name + ".tmp")
-            temporary.writeText(json.encodeToString(StoredLibrary.serializer(), library))
+            temporary.writeText(json.encodeToString(serializer<StoredLibrary>(), library))
             if (!temporary.renameTo(file)) {
-                file.writeText(json.encodeToString(StoredLibrary.serializer(), library))
+                file.writeText(json.encodeToString(serializer<StoredLibrary>(), library))
                 temporary.delete()
             }
         }

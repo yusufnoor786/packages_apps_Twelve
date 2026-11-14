@@ -84,7 +84,7 @@ class SaavnClient(
                 ?.forEach { it.delete() }
 
             File(directory, key.sha1()).writeText(
-                "${entry.storedAt}\n${json.encodeToString(JsonElement.serializer(), entry.element)}"
+                "${entry.storedAt}\n${entry.element}"
             )
         }
     }
