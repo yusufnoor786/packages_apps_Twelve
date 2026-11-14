@@ -14,4 +14,12 @@ class HorizontalMediaItemView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     @AttrRes defStyleAttr: Int = com.google.android.material.R.attr.materialCardViewStyle,
-) : BaseMediaItemView(context, attrs, defStyleAttr, R.layout.horizontal_media_item_view)
+) : BaseMediaItemView(context, attrs, defStyleAttr, R.layout.horizontal_media_item_view) {
+    init {
+        // The card is the layout itself, the view around it only holds the margins
+        setCardBackgroundColor(android.graphics.Color.TRANSPARENT)
+        radius = 32 * resources.displayMetrics.density
+        cardElevation = 0f
+        strokeWidth = 0
+    }
+}

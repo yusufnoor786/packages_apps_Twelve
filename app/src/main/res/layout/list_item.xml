@@ -53,7 +53,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:hyphenationFrequency="normal"
+            android:hyphenationFrequency="none"
             android:maxLines="1"
             android:textColor="@color/list_item_primary"
             tools:text="Headline" />
@@ -64,7 +64,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:hyphenationFrequency="normal"
+            android:hyphenationFrequency="none"
             android:maxLines="2"
             android:textColor="@color/list_item_secondary"
             tools:text="Supporting" />
@@ -78,7 +78,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:ellipsize="end"
-        android:hyphenationFrequency="normal"
+        android:hyphenationFrequency="none"
         android:maxLines="1"
         android:textAlignment="viewEnd"
         android:textColor="@color/list_item_secondary"

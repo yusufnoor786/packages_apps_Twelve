@@ -9,6 +9,7 @@ import android.app.Application
 import android.content.ComponentName
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.preference.PreferenceManager
 import kotlinx.coroutines.Dispatchers
@@ -135,6 +136,14 @@ abstract class TwelveViewModel(application: Application) : AndroidViewModel(appl
                 sharedPreferences.typedRepeatMode = value
             }
         }
+
+    /**
+     * Whether music is playing, or about to once it buffered.
+     */
+    val isPlayingNow: Boolean
+        get() = mediaController.value?.let {
+            it.isPlaying || (it.playWhenReady && it.playbackState == Player.STATE_BUFFERING)
+        } ?: false
 
     fun playAudio(audios: List<Audio>, position: Int) {
         mediaController.value?.apply {

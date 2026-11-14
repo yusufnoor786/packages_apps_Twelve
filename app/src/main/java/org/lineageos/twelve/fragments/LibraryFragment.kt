@@ -55,7 +55,7 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
             override fun getItemCount() = Menus.entries.size
             override fun createFragment(position: Int) = Menus.entries[position].fragment()
         }
-        viewPager2.offscreenPageLimit = 1
+        viewPager2.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
 
         // The buttons and the pages follow each other
         menuToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->

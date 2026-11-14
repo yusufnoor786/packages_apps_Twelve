@@ -48,6 +48,13 @@ class ListItem @JvmOverloads constructor(
     private val trailingIconImageView by lazy { findViewById<ImageView>(R.id.trailingIconImageView) }
     private val trailingSupportingTextView by lazy { findViewById<TextView>(R.id.trailingSupportingTextView) }
 
+    // The cover of the row, set up on its first use
+    private var leadingCoverSetUp = false
+    private val placeholderIcons = mutableMapOf<Int, android.graphics.drawable.Drawable?>()
+
+    // Where the row stands in its group, nothing to change when it stays there
+    private var groupState: Triple<Boolean, Boolean, Boolean>? = null
+
     // Colors of the text and icon on a plain row, a highlighted row uses its container's
     private val defaultHeadlineColors by lazy { headlineTextView.textColors }
     private val defaultLeadingIconTint by lazy { leadingIconImageView.imageTintList }
@@ -253,6 +260,12 @@ class ListItem @JvmOverloads constructor(
         val isFirst = index <= 0
         val isLast = index >= count - 1
 
+        val state = Triple(isFirst, isLast, highlighted)
+        if (groupState == state && layoutParams != null) {
+            return
+        }
+        groupState = state
+
         cardElevation = 0f
         strokeWidth = 0
         shapeAppearanceModel = com.google.android.material.shape.ShapeAppearanceModel.builder()
@@ -314,39 +327,49 @@ class ListItem @JvmOverloads constructor(
      */
     fun setLeadingCover(thumbnail: Thumbnail?, @DrawableRes placeholder: Int) {
         val density = resources.displayMetrics.density
-        val size = (COVER_SIZE_DP * density).toInt()
 
         leadingIconImageView.apply {
-            layoutParams = layoutParams.also {
-                it.width = size
-                it.height = size
+            // The rounded square is set up once, a row only changes its picture afterwards
+            if (!leadingCoverSetUp) {
+                leadingCoverSetUp = true
+
+                val size = (COVER_SIZE_DP * density).toInt()
+                layoutParams = layoutParams.also {
+                    it.width = size
+                    it.height = size
+                }
+                imageTintList = null
+                clipToOutline = true
+                outlineProvider = object : android.view.ViewOutlineProvider() {
+                    override fun getOutline(view: View, outline: android.graphics.Outline) {
+                        outline.setRoundRect(
+                            0, 0, view.width, view.height, COVER_RADIUS_DP * density
+                        )
+                    }
+                }
+                // A cover that is not there is the icon, padded, on a tonal square
+                setBackgroundColor(
+                    com.google.android.material.color.MaterialColors.getColor(
+                        this, com.google.android.material.R.attr.colorSurfaceContainerHighest
+                    )
+                )
+                setPadding(0, 0, 0, 0)
             }
             scaleType = ImageView.ScaleType.CENTER_CROP
-            imageTintList = null
-            clipToOutline = true
-            outlineProvider = object : android.view.ViewOutlineProvider() {
-                override fun getOutline(view: View, outline: android.graphics.Outline) {
-                    outline.setRoundRect(0, 0, view.width, view.height, COVER_RADIUS_DP * density)
-                }
-            }
-
-            val icon = androidx.appcompat.content.res.AppCompatResources.getDrawable(context, placeholder)
-                ?.mutate()?.also {
-                    androidx.core.graphics.drawable.DrawableCompat.setTint(
-                        it,
-                        com.google.android.material.color.MaterialColors.getColor(
-                            this, com.google.android.material.R.attr.colorOnSurfaceVariant
-                        )
-                    )
-                }
-            // A cover that is not there is the icon, padded, on a tonal square
-            setBackgroundColor(
-                com.google.android.material.color.MaterialColors.getColor(
-                    this, com.google.android.material.R.attr.colorSurfaceContainerHighest
-                )
-            )
-            setPadding(0, 0, 0, 0)
             isVisible = true
+
+            // Icons are made once per row, not on every bind
+            val icon = placeholderIcons.getOrPut(placeholder) {
+                androidx.appcompat.content.res.AppCompatResources.getDrawable(context, placeholder)
+                    ?.mutate()?.also {
+                        androidx.core.graphics.drawable.DrawableCompat.setTint(
+                            it,
+                            com.google.android.material.color.MaterialColors.getColor(
+                                this, com.google.android.material.R.attr.colorOnSurfaceVariant
+                            )
+                        )
+                    }
+            }
 
             when (thumbnail) {
                 null -> {

@@ -6,6 +6,9 @@
 package org.lineageos.twelve.fragments
 
 import android.content.Intent
+import android.widget.Toast
+import android.widget.PopupMenu
+import android.view.Gravity
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.util.Log
@@ -22,6 +25,7 @@ import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -156,11 +160,12 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                     }
 
                     is Audio -> {
+                        // Nothing playing: it plays. Something playing: ask what to do
                         view.setOnClickListener {
-                            findNavController().navigateSafe(
-                                R.id.action_mainFragment_to_fragment_media_item_bottom_sheet_dialog,
-                                MediaItemBottomSheetDialogFragment.createBundle(item.uri)
-                            )
+                            when (viewModel.isPlayingNow) {
+                                false -> viewModel.playAudio(listOf(item), 0)
+                                true -> showSearchPlayMenu(view, item)
+                            }
                         }
 
                         view.setLeadingCover(item.thumbnail, R.drawable.ic_music_note)
@@ -302,11 +307,13 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         ViewCompat.setOnApplyWindowInsetsListener(searchRecyclerView) { v, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
 
+            // The last results scroll above the floating mini player
             v.updatePadding(
-                insets,
-                start = true,
-                end = true,
-                bottom = true,
+                left = insets.left,
+                right = insets.right,
+                bottom = insets.bottom + resources.getDimensionPixelSize(
+                    R.dimen.now_playing_bar_height
+                ) + 2 * resources.getDimensionPixelSize(R.dimen.now_playing_bar_margin_vertical),
             )
 
             windowInsets
@@ -424,7 +431,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             override fun getItemCount() = Page.entries.size
             override fun createFragment(position: Int) = Page.entries[position].createFragment()
         }
-        viewPager2.offscreenPageLimit = 1
+        viewPager2.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
 
         navigationBarView.setOnItemSelectedListener { item ->
             if (item.itemId == R.id.searchFragment) {
@@ -552,6 +559,42 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     }
 
     /**
+     * Ask whether a song found while something plays replaces it or joins the queue.
+     */
+    private fun showSearchPlayMenu(anchor: View, audio: Audio) {
+        PopupMenu(requireContext(), anchor, Gravity.END).apply {
+            menu.add(0, MENU_PLAY_NOW, 0, R.string.audio_play_now)
+                .setIcon(R.drawable.ic_play_arrow)
+            menu.add(0, MENU_PLAY_NEXT, 1, R.string.audio_play_next)
+                .setIcon(R.drawable.ic_queue_play_next)
+            menu.add(0, MENU_ADD_TO_QUEUE, 2, R.string.audio_add_to_queue)
+                .setIcon(R.drawable.ic_add_to_queue)
+            setForceShowIcon(true)
+
+            setOnMenuItemClickListener {
+                when (it.itemId) {
+                    MENU_PLAY_NOW -> viewModel.playAudio(listOf(audio), 0)
+
+                    MENU_PLAY_NEXT -> {
+                        viewModel.playNext(listOf(audio))
+                        Toast.makeText(
+                            requireContext(), R.string.audio_playing_next, Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    MENU_ADD_TO_QUEUE -> {
+                        viewModel.addToQueue(listOf(audio))
+                        Toast.makeText(
+                            requireContext(), R.string.audio_added_to_queue, Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                true
+            }
+        }.show()
+    }
+
+    /**
      * Show the search results of the chosen kind, or what fits when there are none.
      */
     private fun showSearchResults() {
@@ -594,6 +637,10 @@ class MainFragment : Fragment(R.layout.fragment_main) {
 
     companion object {
         private val LOG_TAG = MainFragment::class.simpleName!!
+
+        private const val MENU_PLAY_NOW = 1
+        private const val MENU_PLAY_NEXT = 2
+        private const val MENU_ADD_TO_QUEUE = 3
 
         private val searchDiffCallback = object : DiffUtil.ItemCallback<MediaItem<*>>() {
             override fun areItemsTheSame(
