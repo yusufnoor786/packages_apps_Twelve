@@ -22,4 +22,16 @@
         app:iconTint="?attr/colorOnSurface"
         app:showAsAction="ifRoom" />
 
+    <item
+        android:id="@+id/sharePlaylist"
+        android:title="@string/share_playlist"
+        android:visible="false"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/savePlaylistToFile"
+        android:title="@string/save_playlist_to_file"
+        android:visible="false"
+        app:showAsAction="never" />
+
 </menu>

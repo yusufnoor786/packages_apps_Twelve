@@ -560,6 +560,12 @@ class SaavnDataSource(
             }
         }.flowOn(Dispatchers.IO)
 
+    /**
+     * Add a playlist that came from outside: a file, a friend, another service.
+     */
+    fun importPlaylist(name: String, songIds: List<String>): Uri =
+        userPlaylistUri(store.createPlaylist(name, songIds))
+
     // Playlists management
 
     override suspend fun createPlaylist(

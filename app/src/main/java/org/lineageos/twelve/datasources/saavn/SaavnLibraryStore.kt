@@ -69,6 +69,21 @@ class SaavnLibraryStore(
     }
 
     @Synchronized
+    fun createPlaylist(name: String, songIds: List<String>): Long {
+        var createdId = 0L
+        update { library ->
+            createdId = library.nextPlaylistId
+            library.copy(
+                playlists = library.playlists + StoredPlaylist(
+                    createdId, name, songIds.distinct(), System.currentTimeMillis()
+                ),
+                nextPlaylistId = createdId + 1,
+            )
+        }
+        return createdId
+    }
+
+    @Synchronized
     fun renamePlaylist(playlistId: Long, name: String) = updatePlaylist(playlistId) {
         it.copy(name = name)
     }

@@ -237,6 +237,14 @@ class MediaRepository(
     fun refreshOnline() = saavnDataSource.refresh()
 
     /**
+     * Add a playlist that came from outside to the online library.
+     *
+     * @return The URI of the new playlist
+     */
+    fun importOnlinePlaylist(name: String, songIds: List<String>) =
+        saavnDataSource.importPlaylist(name, songIds)
+
+    /**
      * Delete all local stats entries.
      */
     suspend fun resetLocalStats() {

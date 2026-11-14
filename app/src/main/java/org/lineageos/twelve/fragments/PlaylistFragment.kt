@@ -33,6 +33,10 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import android.content.Intent
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import org.lineageos.twelve.utils.SharedPlaylist
 import org.lineageos.twelve.R
 import org.lineageos.twelve.ext.Bundle
 import org.lineageos.twelve.ext.getParcelable
@@ -80,9 +84,27 @@ class PlaylistFragment : CollapsingToolbarLayoutFragment(R.layout.fragment_playl
     private val toolbar by getViewProperty<MaterialToolbar>(R.id.toolbar)
     private val tracksInfoTextView by getViewProperty<TextView>(R.id.tracksInfoTextView)
 
+    // Songs that can be shared, null when the playlist can't leave the app
+    private var sharablePlaylist: SharedPlaylist? = null
+
+    private val savePlaylistLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        val playlist = sharablePlaylist ?: return@registerForActivityResult
+        if (uri != null) {
+            runCatching {
+                requireContext().contentResolver.openOutputStream(uri, "wt")?.use {
+                    it.write(playlist.toJson().toByteArray())
+                }
+            }
+        }
+    }
+
     // Menu items
     private val deletePlaylistMenuItem get() = toolbar.menu.findItem(R.id.deletePlaylist)
     private val renamePlaylistMenuItem get() = toolbar.menu.findItem(R.id.renamePlaylist)
+    private val sharePlaylistMenuItem get() = toolbar.menu.findItem(R.id.sharePlaylist)
+    private val savePlaylistToFileMenuItem get() = toolbar.menu.findItem(R.id.savePlaylistToFile)
 
     // Recyclerview
     private val adapter by lazy {
@@ -205,6 +227,21 @@ class PlaylistFragment : CollapsingToolbarLayoutFragment(R.layout.fragment_playl
                     true
                 }
 
+                R.id.sharePlaylist -> {
+                    sharePlaylist()
+                    true
+                }
+
+                R.id.savePlaylistToFile -> {
+                    sharablePlaylist?.let { playlist ->
+                        savePlaylistLauncher.launch(
+                            playlist.name.replace(Regex("[^\\p{L}\\p{N} _-]"), "_") +
+                                    SharedPlaylist.FILE_EXTENSION
+                        )
+                    }
+                    true
+                }
+
                 else -> false
             }
         }
@@ -296,6 +333,21 @@ class PlaylistFragment : CollapsingToolbarLayoutFragment(R.layout.fragment_playl
 
                         adapter.submitList(audios)
 
+                        // Only songs of the online catalog mean something on another phone
+                        val onlineSongs = audios.filter { it.uri.scheme == ONLINE_SCHEME }
+                        sharablePlaylist = onlineSongs.takeIf { it.isNotEmpty() }?.let { songs ->
+                            SharedPlaylist(
+                                name = playlist.name ?: getString(R.string.favorites_playlist),
+                                songs = songs.mapNotNull { audio ->
+                                    audio.uri.lastPathSegment?.let { id ->
+                                        SharedPlaylist.Song(id, audio.title, audio.artistName)
+                                    }
+                                },
+                            )
+                        }
+                        sharePlaylistMenuItem.isVisible = sharablePlaylist != null
+                        savePlaylistToFileMenuItem.isVisible = sharablePlaylist != null
+
                         val isEmpty = audios.isEmpty()
                         recyclerView.isVisible = !isEmpty
                         noElementsNestedScrollView.isVisible = isEmpty
@@ -343,6 +395,25 @@ class PlaylistFragment : CollapsingToolbarLayoutFragment(R.layout.fragment_playl
         }
     }
 
+    private fun sharePlaylist() {
+        val playlist = sharablePlaylist ?: run {
+            Toast.makeText(requireContext(), R.string.share_playlist_empty, Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+
+        startActivity(
+            Intent.createChooser(
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_SUBJECT, playlist.name)
+                    putExtra(Intent.EXTRA_TEXT, playlist.toShareText())
+                },
+                getString(R.string.share_playlist),
+            )
+        )
+    }
+
     private fun showRenamePlaylistAlertDialog() {
         EditTextMaterialAlertDialogBuilder(requireContext())
             .setText(toolbar.title.toString())
@@ -375,6 +446,8 @@ class PlaylistFragment : CollapsingToolbarLayoutFragment(R.layout.fragment_playl
 
     companion object {
         private val LOG_TAG = PlaylistFragment::class.simpleName!!
+
+        private const val ONLINE_SCHEME = "saavn"
 
         private const val ARG_PLAYLIST_URI = "playlist_uri"
 

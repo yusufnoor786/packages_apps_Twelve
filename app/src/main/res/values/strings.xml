@@ -90,6 +90,16 @@
     <string name="audio_effects">Audio effects</string>
     <string name="playback_speed">Playback speed</string>
     <string name="volume">Volume</string>
+    <string name="share_playlist">Share playlist</string>
+    <string name="save_playlist_to_file">Save playlist to a file</string>
+    <string name="import_playlist">Import playlist</string>
+    <string name="import_playlist_hint">Paste the code of a playlist, or open a saved file</string>
+    <string name="import_playlist_code">Playlist code</string>
+    <string name="import_playlist_from_file">Open file</string>
+    <string name="import_playlist_positive">Import</string>
+    <string name="import_playlist_invalid">That is not a playlist Twelve can read</string>
+    <string name="import_playlist_done">Imported \"%1$s\" with %2$d songs</string>
+    <string name="share_playlist_empty">The playlist is empty</string>
     <string name="quality_lossy_kbps">Lossy · %1$d kbps</string>
     <string name="lyrics_timing">Lyrics timing</string>
     <string name="lyrics_timing_hint">Lyrics earlier (+) or later (−), in milliseconds</string>

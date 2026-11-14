@@ -25,6 +25,16 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import android.content.ClipboardManager
+import android.view.Gravity
+import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import com.google.android.material.chip.Chip
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import org.lineageos.twelve.models.ProviderType
+import org.lineageos.twelve.utils.SharedPlaylist
 import org.lineageos.twelve.R
 import org.lineageos.twelve.ext.getViewProperty
 import org.lineageos.twelve.ext.navigateSafe
@@ -51,6 +61,23 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
 
     // Views
     private val createNewPlaylistButton by getViewProperty<Button>(R.id.createNewPlaylistButton)
+    private val importPlaylistChip by getViewProperty<Chip>(R.id.importPlaylistChip)
+
+    private var importCodeEditText: EditText? = null
+
+    private val openPlaylistFileLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            val text = runCatching {
+                requireContext().contentResolver.openInputStream(it)?.use { input ->
+                    input.readBytes().decodeToString()
+                }
+            }.getOrNull()
+
+            importPlaylist(text.orEmpty())
+        }
+    }
     private val linearProgressIndicator by getViewProperty<LinearProgressIndicator>(R.id.linearProgressIndicator)
     private val noElementsLinearLayout by getViewProperty<LinearLayout>(R.id.noElementsLinearLayout)
     private val pullToRefreshLayout by getViewProperty<PullToRefreshLayout>(R.id.pullToRefreshLayout)
@@ -117,6 +144,64 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
         this, PermissionsUtils.mainPermissions
     )
 
+    /**
+     * Ask for the code of a playlist, or for the file it was saved in.
+     */
+    private fun showImportPlaylistDialog() {
+        val context = requireContext()
+        val padding = (24 * resources.displayMetrics.density).toInt()
+
+        val editText = EditText(context).apply {
+            hint = getString(R.string.import_playlist_code)
+            minLines = 3
+            maxLines = 6
+            gravity = Gravity.TOP or Gravity.START
+
+            // A code that was just copied is what the user is here for
+            val clipboard = context.getSystemService(ClipboardManager::class.java)
+            val copied = clipboard?.primaryClip?.takeIf { it.itemCount > 0 }
+                ?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty()
+            if (SharedPlaylist.parse(copied) != null) {
+                setText(copied)
+            }
+        }
+        importCodeEditText = editText
+
+        val container = FrameLayout(context).apply {
+            setPadding(padding, padding / 2, padding, 0)
+            addView(editText)
+        }
+
+        MaterialAlertDialogBuilder(context)
+            .setTitle(R.string.import_playlist)
+            .setMessage(R.string.import_playlist_hint)
+            .setView(container)
+            .setPositiveButton(R.string.import_playlist_positive) { _, _ ->
+                importPlaylist(editText.text.toString())
+            }
+            .setNeutralButton(R.string.import_playlist_from_file) { _, _ ->
+                openPlaylistFileLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun importPlaylist(text: String) {
+        val playlist = SharedPlaylist.parse(text)
+        if (playlist == null) {
+            Toast.makeText(requireContext(), R.string.import_playlist_invalid, Toast.LENGTH_LONG)
+                .show()
+            return
+        }
+
+        viewModel.importOnlinePlaylist(playlist.name, playlist.songs.map { it.id })
+        Toast.makeText(
+            requireContext(),
+            getString(R.string.import_playlist_done, playlist.name, playlist.songs.size),
+            Toast.LENGTH_LONG,
+        ).show()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -151,6 +236,18 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
         recyclerView.adapter = adapter
 
         pullToRefreshLayout.onRefresh = { viewModel.refreshContent() }
+
+        importPlaylistChip.setOnClickListener {
+            showImportPlaylistDialog()
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // Playlists that come from outside are playlists of the online catalog
+                viewModel.navigationProvider.collectLatest {
+                    importPlaylistChip.isVisible = it?.type == ProviderType.SAAVN
+                }
+            }
+        }
 
         createNewPlaylistButton.setOnClickListener {
             findNavController().navigateSafe(

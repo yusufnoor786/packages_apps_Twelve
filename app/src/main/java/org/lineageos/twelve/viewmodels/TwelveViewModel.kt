@@ -46,6 +46,12 @@ abstract class TwelveViewModel(application: Application) : AndroidViewModel(appl
     fun refreshContent() {
         mediaRepository.refreshOnline()
     }
+
+    /**
+     * Add a playlist that came from outside to the online library.
+     */
+    fun importOnlinePlaylist(name: String, songIds: List<String>) =
+        mediaRepository.importOnlinePlaylist(name, songIds)
     protected val providersRepository = getApplication<TwelveApplication>().providersRepository
     protected val outputConfigurationRepository =
         getApplication<TwelveApplication>().outputConfigurationRepository
