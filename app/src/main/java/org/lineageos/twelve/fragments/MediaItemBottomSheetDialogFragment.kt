@@ -59,6 +59,9 @@ class MediaItemBottomSheetDialogFragment : TwelveBottomSheetDialogFragment(
     private val openArtistListItem by getViewProperty<ListItem>(R.id.openArtistListItem)
     private val openGenreListItem by getViewProperty<ListItem>(R.id.openGenreListItem)
     private val placeholderImageView by getViewProperty<ImageView>(R.id.placeholderImageView)
+    private val equalizerListItem by getViewProperty<ListItem>(R.id.equalizerListItem)
+    private val playbackSpeedListItem by getViewProperty<ListItem>(R.id.playbackSpeedListItem)
+    private val visualizerListItem by getViewProperty<ListItem>(R.id.visualizerListItem)
     private val playNowListItem by getViewProperty<ListItem>(R.id.playNowListItem)
     private val playNextListItem by getViewProperty<ListItem>(R.id.playNextListItem)
     private val removeFromPlaylistListItem by getViewProperty<ListItem>(R.id.removeFromPlaylistListItem)
@@ -97,6 +100,25 @@ class MediaItemBottomSheetDialogFragment : TwelveBottomSheetDialogFragment(
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // The extra actions of the player live here
+        listOf(
+            playbackSpeedListItem to ACTION_PLAYBACK_SPEED,
+            equalizerListItem to ACTION_EQUALIZER,
+            visualizerListItem to ACTION_VISUALIZER,
+        ).forEach { (listItem, action) ->
+            listItem.isVisible = fromNowPlaying
+            listItem.setOnClickListener {
+                // The player navigates from its own destination, leave the sheet first
+                val fragmentManager = parentFragmentManager
+                findNavController().navigateUp()
+
+                fragmentManager.setFragmentResult(
+                    RESULT_PLAYER_ACTION,
+                    Bundle().apply { putString(RESULT_KEY_ACTION, action) },
+                )
+            }
+        }
 
         playNowListItem.setOnClickListener {
             viewModel.playNow()
@@ -343,7 +365,16 @@ class MediaItemBottomSheetDialogFragment : TwelveBottomSheetDialogFragment(
         private const val ARG_PLAYLIST_URI = "playlist_uri"
 
         /**
-         * Create a [Bundle] to use as the arguments for this fragment.
+         * Fragment result key: the user picked an action that belongs to the player.
+         */
+        const val RESULT_PLAYER_ACTION = "media_item_bottom_sheet_player_action"
+        const val RESULT_KEY_ACTION = "action"
+        const val ACTION_PLAYBACK_SPEED = "playback_speed"
+        const val ACTION_EQUALIZER = "equalizer"
+        const val ACTION_VISUALIZER = "visualizer"
+
+        /**
+         * @param fromNowPlaying Whether this fragment was opened from the now playing fragment
          * @param uri The URI of the media item to display
          * @param fromAlbum Whether this fragment was opened from an album
          * @param fromArtist Whether this fragment was opened from an artist

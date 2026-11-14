@@ -3,9 +3,10 @@
      SPDX-FileCopyrightText: The LineageOS Project
      SPDX-License-Identifier: Apache-2.0
 -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<org.lineageos.twelve.ui.views.SwipeToDismissLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/swipeToDismissLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black"
@@ -161,4 +162,4 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-</FrameLayout>
+</org.lineageos.twelve.ui.views.SwipeToDismissLayout>

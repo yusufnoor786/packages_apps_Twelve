@@ -3,9 +3,10 @@
      SPDX-FileCopyrightText: The LineageOS Project
      SPDX-License-Identifier: Apache-2.0
 -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<org.lineageos.twelve.ui.views.SwipeToDismissLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/swipeToDismissLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black"
@@ -35,6 +36,7 @@
             android:layout_height="0dp"
             android:layout_weight="1">
 
+            <!-- Player: cover, title and lyrics preview -->
             <androidx.core.widget.NestedScrollView
                 android:id="@+id/nestedScrollView"
                 android:layout_width="match_parent"
@@ -55,7 +57,6 @@
                         android:indeterminate="true"
                         android:visibility="gone" />
 
-                    <!-- Player: big cover -->
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/albumArtMaterialCardView"
                         style="?attr/materialCardViewFilledStyle"
@@ -108,7 +109,6 @@
 
                     </com.google.android.material.card.MaterialCardView>
 
-                    <!-- Player: title, artist and options -->
                     <LinearLayout
                         android:id="@+id/titleRowLinearLayout"
                         android:layout_width="match_parent"
@@ -137,7 +137,6 @@
 
                     </LinearLayout>
 
-                    <!-- Player: current lyrics line, opens the lyrics -->
                     <LinearLayout
                         android:id="@+id/lyricsPreviewLinearLayout"
                         android:layout_width="match_parent"
@@ -179,97 +178,150 @@
 
             </androidx.core.widget.NestedScrollView>
 
+            <!-- Lyrics and queue: small cover on top, the list below -->
             <LinearLayout
-                android:id="@+id/lyricsLinearLayout"
+                android:id="@+id/modeLinearLayout"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="vertical"
                 android:visibility="gone">
 
-            <!-- Lyrics: small cover, title and options -->
-            <LinearLayout
-                android:id="@+id/compactHeaderLinearLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="24dp"
-                android:paddingBottom="12dp">
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/compactCoverMaterialCardView"
-                    style="?attr/materialCardViewFilledStyle"
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
-                    app:cardBackgroundColor="?attr/colorSecondaryContainer"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
-                    app:strokeWidth="0dp">
-
-                    <ImageView
-                        android:id="@+id/compactCoverImageView"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@string/content_description_thumbnail"
-                        android:scaleType="centerCrop" />
-
-                </com.google.android.material.card.MaterialCardView>
-
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:id="@+id/compactHeaderLinearLayout"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="16dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="24dp"
+                    android:paddingBottom="12dp">
 
-                    <TextView
-                        android:id="@+id/compactTitleTextView"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:textAppearance="?attr/textAppearanceTitleMedium"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textStyle="bold"
-                        tools:text="Tokyo Story" />
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/compactCoverMaterialCardView"
+                        style="?attr/materialCardViewFilledStyle"
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:cardBackgroundColor="?attr/colorSecondaryContainer"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="0dp">
 
-                    <TextView
-                        android:id="@+id/compactArtistTextView"
-                        android:layout_width="match_parent"
+                        <ImageView
+                            android:id="@+id/compactCoverImageView"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@string/content_description_thumbnail"
+                            android:scaleType="centerCrop" />
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        tools:text="Ryuichi Sakamoto" />
+                        android:layout_marginHorizontal="16dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/compactTitleTextView"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textStyle="bold"
+                            tools:text="Tokyo Story" />
+
+                        <TextView
+                            android:id="@+id/compactArtistTextView"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            tools:text="Ryuichi Sakamoto" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/compactOptionsMaterialButton"
+                        style="?attr/materialIconButtonFilledTonalStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/more_options"
+                        android:tooltipText="@string/more_options"
+                        app:icon="@drawable/ic_more_horiz" />
 
                 </LinearLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/compactOptionsMaterialButton"
-                    style="?attr/materialIconButtonFilledTonalStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="@string/more_options"
-                    android:tooltipText="@string/more_options"
-                    app:icon="@drawable/ic_more_horiz" />
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1">
 
-            </LinearLayout>
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/lyricsRecyclerView"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:clipToPadding="false"
+                        android:fadingEdgeLength="96dp"
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never"
+                        android:requiresFadingEdge="vertical"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
+                    <LinearLayout
+                        android:id="@+id/queueLinearLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:visibility="gone">
 
-            <!-- Lyrics: the lines -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/lyricsRecyclerView"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:clipToPadding="false"
-                android:fadingEdgeLength="96dp"
-                android:nestedScrollingEnabled="false"
-                android:overScrollMode="never"
-                android:requiresFadingEdge="vertical"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingStart="24dp"
+                            android:paddingEnd="20dp">
 
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/queue"
+                                android:textAppearance="?attr/textAppearanceHeadlineMedium"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textStyle="bold" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/autoplayChip"
+                                style="@style/Widget.Material3.Chip.Filter"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checkable="true"
+                                android:text="@string/autoplay"
+                                android:textColor="?attr/colorOnSurface" />
+
+                        </LinearLayout>
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/queueRecyclerView"
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:clipToPadding="false"
+                            android:fadingEdgeLength="48dp"
+                            android:paddingTop="8dp"
+                            android:requiresFadingEdge="vertical"
+                            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+                    </LinearLayout>
+
+                </FrameLayout>
 
             </LinearLayout>
 
@@ -298,7 +350,6 @@
             android:layout_marginHorizontal="8dp"
             android:layout_marginTop="12dp"
             android:layout_marginBottom="16dp" />
-
 
     </LinearLayout>
 
@@ -333,4 +384,4 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-</FrameLayout>
+</org.lineageos.twelve.ui.views.SwipeToDismissLayout>

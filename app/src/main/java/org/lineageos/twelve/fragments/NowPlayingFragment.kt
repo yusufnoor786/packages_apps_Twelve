@@ -8,15 +8,16 @@ package org.lineageos.twelve.fragments
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
-import android.icu.text.DecimalFormat
-import android.icu.text.DecimalFormatSymbols
+import android.graphics.Rect
 import android.media.audiofx.AudioEffect
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.util.TypedValue
+import android.view.MotionEvent
 import android.view.SurfaceView
+import android.view.VelocityTracker
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -25,6 +26,7 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.edit
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
@@ -36,6 +38,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.common.Player
 import androidx.navigation.fragment.findNavController
+import androidx.preference.PreferenceManager
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.transition.Fade
 import androidx.transition.TransitionManager
@@ -43,6 +48,7 @@ import androidx.transition.TransitionSet
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.chip.Chip
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.slider.Slider
 import com.google.android.material.transition.MaterialContainerTransform
@@ -51,7 +57,9 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import me.bogerchan.niervisualizer.NierVisualizerManager
 import org.lineageos.twelve.R
+import org.lineageos.twelve.ext.AUTOPLAY_KEY
 import org.lineageos.twelve.ext.applyBackdropEffects
+import org.lineageos.twelve.ext.autoplay
 import org.lineageos.twelve.ext.blur
 import org.lineageos.twelve.ext.getViewProperty
 import org.lineageos.twelve.ext.loadBackdrop
@@ -61,44 +69,54 @@ import org.lineageos.twelve.ext.updatePadding
 import org.lineageos.twelve.ext.updateValueAndRange
 import org.lineageos.twelve.models.FlowResult
 import org.lineageos.twelve.models.FlowResult.Companion.getOrNull
+import org.lineageos.twelve.models.Lyrics
 import org.lineageos.twelve.models.OutputConfiguration
 import org.lineageos.twelve.models.PlaybackState
 import org.lineageos.twelve.models.RepeatMode
 import org.lineageos.twelve.models.Result
 import org.lineageos.twelve.ui.recyclerview.CenterSmoothScroller
 import org.lineageos.twelve.ui.recyclerview.LyricsAdapter
+import org.lineageos.twelve.ui.recyclerview.QueueAdapter
+import org.lineageos.twelve.ui.views.SwipeToDismissLayout
 import org.lineageos.twelve.ui.visualizer.VisualizerNVDataSource
 import org.lineageos.twelve.utils.PermissionsChecker
 import org.lineageos.twelve.utils.PermissionsUtils
 import org.lineageos.twelve.utils.TimestampFormatter
 import org.lineageos.twelve.viewmodels.NowPlayingViewModel
-import java.util.Locale
+import org.lineageos.twelve.viewmodels.QueueViewModel
+import kotlin.math.abs
 import kotlin.math.roundToLong
 
 /**
  * Now playing fragment.
  *
- * In portrait the lyrics are shown in place: the cover moves up to a small header and the lyrics
- * take its room, while the seek bar and the controls stay where they are. In landscape the
- * lyrics have a screen of their own.
+ * In portrait the lyrics and the queue are shown in place: the cover moves up to a small header
+ * and the list takes its room, while the seek bar and the controls stay where they are. The
+ * player slides down to the mini player when it's swiped down, and the queue opens when the
+ * cover is swiped up. In landscape the lyrics and the queue have screens of their own.
  */
 class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
+    private enum class Mode {
+        PLAYER,
+        LYRICS,
+        QUEUE,
+    }
+
     // View models
     private val viewModel by viewModels<NowPlayingViewModel>()
+    private val queueViewModel by viewModels<QueueViewModel>()
 
     // Views
     private val albumArtConstraintLayout by getViewProperty<ConstraintLayout?>(R.id.albumArtConstraintLayout)
     private val albumArtImageView by getViewProperty<ImageView>(R.id.albumArtImageView)
     private val albumArtMaterialCardView by getViewProperty<MaterialCardView>(R.id.albumArtMaterialCardView)
     private val albumTitleTextView by getViewProperty<TextView>(R.id.albumTitleTextView)
-    private val audioInformationMaterialButton by getViewProperty<MaterialButton>(R.id.audioInformationMaterialButton)
     private val audioTitleTextView by getViewProperty<TextView>(R.id.audioTitleTextView)
     private val backdropImageView by getViewProperty<ImageView>(R.id.backdropImageView)
     private val artistNameTextView by getViewProperty<TextView>(R.id.artistNameTextView)
     private val currentLyricsTextView by getViewProperty<TextView>(R.id.currentLyricsTextView)
     private val currentTimestampTextView by getViewProperty<TextView>(R.id.currentTimestampTextView)
     private val durationTimestampTextView by getViewProperty<TextView>(R.id.durationTimestampTextView)
-    private val equalizerMaterialButton by getViewProperty<MaterialButton>(R.id.equalizerMaterialButton)
     private val fileTypeTextView by getViewProperty<TextView>(R.id.fileTypeTextView)
     private val hiResImageView by getViewProperty<ImageView>(R.id.hiResImageView)
     private val isFavoriteMaterialButton by getViewProperty<MaterialButton>(R.id.isFavoriteMaterialButton)
@@ -108,7 +126,6 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
     private val nextTrackMaterialButton by getViewProperty<MaterialButton>(R.id.nextTrackMaterialButton)
     private val outputDeviceImageView by getViewProperty<ImageView>(R.id.outputDeviceImageView)
     private val playPauseMaterialButton by getViewProperty<MaterialButton>(R.id.playPauseMaterialButton)
-    private val playbackSpeedMaterialButton by getViewProperty<MaterialButton>(R.id.playbackSpeedMaterialButton)
     private val potentialIssuesImageView by getViewProperty<ImageView>(R.id.potentialIssuesImageView)
     private val previousTrackMaterialButton by getViewProperty<MaterialButton>(R.id.previousTrackMaterialButton)
     private val progressSlider by getViewProperty<Slider>(R.id.progressSlider)
@@ -118,22 +135,25 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
     private val shuffleMarkerImageView by getViewProperty<ImageView>(R.id.shuffleMarkerImageView)
     private val shuffleMaterialButton by getViewProperty<MaterialButton>(R.id.shuffleMaterialButton)
     private val statsMaterialCardView by getViewProperty<MaterialCardView>(R.id.statsMaterialCardView)
+    private val swipeToDismissLayout by getViewProperty<SwipeToDismissLayout>(R.id.swipeToDismissLayout)
     private val toolbar by getViewProperty<MaterialToolbar>(R.id.toolbar)
-    private val visualizerMaterialButton by getViewProperty<MaterialButton>(R.id.visualizerMaterialButton)
     private val visualizerSurfaceView by getViewProperty<SurfaceView>(R.id.visualizerSurfaceView)
 
     // Portrait only views
+    private val autoplayChip by getViewProperty<Chip?>(R.id.autoplayChip)
     private val compactCoverImageView by getViewProperty<ImageView?>(R.id.compactCoverImageView)
     private val compactCoverMaterialCardView by getViewProperty<MaterialCardView?>(R.id.compactCoverMaterialCardView)
     private val compactArtistTextView by getViewProperty<TextView?>(R.id.compactArtistTextView)
     private val compactHeaderLinearLayout by getViewProperty<LinearLayout?>(R.id.compactHeaderLinearLayout)
     private val compactOptionsMaterialButton by getViewProperty<MaterialButton?>(R.id.compactOptionsMaterialButton)
     private val compactTitleTextView by getViewProperty<TextView?>(R.id.compactTitleTextView)
-    private val lyricsLinearLayout by getViewProperty<LinearLayout?>(R.id.lyricsLinearLayout)
     private val lyricsPreviewLinearLayout by getViewProperty<LinearLayout?>(R.id.lyricsPreviewLinearLayout)
     private val lyricsRecyclerView by getViewProperty<RecyclerView?>(R.id.lyricsRecyclerView)
+    private val modeLinearLayout by getViewProperty<LinearLayout?>(R.id.modeLinearLayout)
     private val optionsMaterialButton by getViewProperty<MaterialButton?>(R.id.optionsMaterialButton)
     private val playerRootLinearLayout by getViewProperty<LinearLayout?>(R.id.playerRootLinearLayout)
+    private val queueLinearLayout by getViewProperty<LinearLayout?>(R.id.queueLinearLayout)
+    private val queueRecyclerView by getViewProperty<RecyclerView?>(R.id.queueRecyclerView)
     private val topFrameLayout by getViewProperty<FrameLayout?>(R.id.topFrameLayout)
 
     // Landscape only views
@@ -145,14 +165,16 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
     // Progress slider state
     private var isProgressSliderDragging = false
 
+    // Modes
+    private var mode = Mode.PLAYER
+    private var hasLyrics = false
+
     // Lyrics
     private val lyricsAdapter by lazy {
         LyricsAdapter { line ->
             line.durationMs?.let { viewModel.seekToPosition(it.first) }
         }
     }
-    private var hasLyrics = false
-    private var isLyricsMode = false
     private var lyricsCurrentIndex: Int? = null
     private var lastCenteredLyricsIndex = -1
     private var isLyricsFollowing = true
@@ -161,9 +183,48 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         isLyricsFollowing = true
         centerCurrentLyricsLine(animate = true)
     }
-    private val lyricsBackPressedCallback = object : OnBackPressedCallback(false) {
+
+    // Queue
+    private val queueAdapter: QueueAdapter by lazy {
+        QueueAdapter(
+            onPlay = { queueViewModel.playItem(it) },
+            onRemove = { queueViewModel.removeItem(it) },
+            onStartDrag = { queueItemTouchHelper.startDrag(it) },
+        )
+    }
+    private val queueItemTouchHelper: ItemTouchHelper by lazy {
+        ItemTouchHelper(
+            object : ItemTouchHelper.SimpleCallback(
+                ItemTouchHelper.UP or ItemTouchHelper.DOWN,
+                0,
+            ) {
+                override fun isLongPressDragEnabled() = false
+
+                override fun onMove(
+                    recyclerView: RecyclerView,
+                    viewHolder: RecyclerView.ViewHolder,
+                    target: RecyclerView.ViewHolder,
+                ): Boolean {
+                    val from = viewHolder.bindingAdapterPosition
+                    val to = target.bindingAdapterPosition
+
+                    queueAdapter.moveItem(from, to)
+                    queueViewModel.moveItem(from, to)
+
+                    return true
+                }
+
+                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                    // Not supported, items are removed with their button
+                }
+            }
+        )
+    }
+    private var queueScrolled = false
+
+    private val modeBackPressedCallback = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() {
-            setLyricsMode(false, animate = true)
+            setMode(Mode.PLAYER, animate = true)
         }
     }
 
@@ -191,13 +252,15 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
 
         visualizerManager.init(visualizerNVDataSource)
 
-        isLyricsMode = savedInstanceState?.getBoolean(STATE_LYRICS_MODE) == true
+        mode = savedInstanceState?.getString(STATE_MODE)
+            ?.let { name -> Mode.entries.firstOrNull { it.name == name } }
+            ?: Mode.PLAYER
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
 
-        outState.putBoolean(STATE_LYRICS_MODE, isLyricsMode)
+        outState.putString(STATE_MODE, mode.name)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -246,7 +309,7 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
                 bottom = true,
             )
 
-            // The lyrics header sits below the toolbar
+            // The small header sits below the toolbar
             compactHeaderLinearLayout?.let {
                 val toolbarHeight = TypedValue().let { value ->
                     requireContext().theme.resolveAttribute(
@@ -275,6 +338,12 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
             findNavController().navigateSafe(
                 R.id.action_nowPlayingFragment_to_fragment_now_playing_stats_dialog
             )
+        }
+
+        // Swipe down to minimize the player
+        swipeToDismissLayout.canStartDrag = ::canStartDismissDrag
+        swipeToDismissLayout.onDismissed = {
+            findNavController().navigateUp()
         }
 
         // Visualizer
@@ -323,17 +392,7 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
             viewModel.toggleRepeatMode()
         }
 
-        // Bottom bar buttons
-        playbackSpeedMaterialButton.setOnClickListener {
-            findNavController().navigateSafe(
-                R.id.action_nowPlayingFragment_to_fragment_playback_control_bottom_sheet_dialog
-            )
-        }
-
-        audioInformationMaterialButton.setOnClickListener {
-            openAudioOptions()
-        }
-
+        // Options, the extra actions of the player live there
         optionsMaterialButton?.setOnClickListener {
             openAudioOptions()
         }
@@ -342,26 +401,38 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
             openAudioOptions()
         }
 
-        equalizerMaterialButton.setOnClickListener {
-            // Open system equalizer
-            viewModel.audioSessionId.value?.let { audioSessionId ->
-                audioEffectsStartForResult.launch(
-                    Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL).apply {
-                        putExtra(AudioEffect.EXTRA_PACKAGE_NAME, requireContext().packageName)
-                        putExtra(AudioEffect.EXTRA_AUDIO_SESSION, audioSessionId)
-                        putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
-                    },
-                    null
-                )
+        parentFragmentManager.setFragmentResultListener(
+            MediaItemBottomSheetDialogFragment.RESULT_PLAYER_ACTION,
+            viewLifecycleOwner,
+        ) { _, result ->
+            when (result.getString(MediaItemBottomSheetDialogFragment.RESULT_KEY_ACTION)) {
+                MediaItemBottomSheetDialogFragment.ACTION_PLAYBACK_SPEED ->
+                    findNavController().navigateSafe(
+                        R.id.action_nowPlayingFragment_to_fragment_playback_control_bottom_sheet_dialog
+                    )
+
+                MediaItemBottomSheetDialogFragment.ACTION_EQUALIZER -> openEqualizer()
+
+                MediaItemBottomSheetDialogFragment.ACTION_VISUALIZER ->
+                    viewModel.nextVisualizerType()
             }
         }
 
-        visualizerMaterialButton.setOnClickListener {
-            viewModel.nextVisualizerType()
-        }
-
+        // Bottom bar buttons
         queueMaterialButton.setOnClickListener {
-            findNavController().navigateSafe(R.id.action_nowPlayingFragment_to_fragment_queue)
+            when (queueRecyclerView) {
+                null -> findNavController().navigateSafe(
+                    R.id.action_nowPlayingFragment_to_fragment_queue
+                )
+
+                else -> setMode(
+                    when (mode) {
+                        Mode.QUEUE -> Mode.PLAYER
+                        else -> Mode.QUEUE
+                    },
+                    animate = true,
+                )
+            }
         }
 
         isFavoriteMaterialButton.setOnClickListener {
@@ -376,17 +447,31 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         lyricsToggleMaterialButton.setOnClickListener {
             when (lyricsRecyclerView) {
                 null -> showLyricsScreen()
-                else -> setLyricsMode(!isLyricsMode, animate = true)
+                else -> setMode(
+                    when (mode) {
+                        Mode.LYRICS -> Mode.PLAYER
+                        else -> Mode.LYRICS
+                    },
+                    animate = true,
+                )
             }
         }
 
         lyricsPreviewLinearLayout?.setOnClickListener {
-            setLyricsMode(true, animate = true)
+            setMode(Mode.LYRICS, animate = true)
         }
 
         showLyricsMaterialButton?.setOnClickListener {
             showLyricsScreen()
         }
+
+        // Tapping the small cover goes back to the player
+        compactCoverMaterialCardView?.setOnClickListener {
+            setMode(Mode.PLAYER, animate = true)
+        }
+
+        // Swiping the cover up opens the queue
+        setupCoverSwipe()
 
         lyricsRecyclerView?.let { recyclerView ->
             recyclerView.adapter = lyricsAdapter
@@ -420,12 +505,30 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
             }
         }
 
+        queueRecyclerView?.let { recyclerView ->
+            recyclerView.adapter = queueAdapter
+            queueItemTouchHelper.attachToRecyclerView(recyclerView)
+        }
+
+        autoplayChip?.let { chip ->
+            val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(
+                requireContext()
+            )
+
+            chip.isChecked = sharedPreferences.autoplay
+            chip.setOnCheckedChangeListener { _, isChecked ->
+                sharedPreferences.edit {
+                    putBoolean(AUTOPLAY_KEY, isChecked)
+                }
+            }
+        }
+
         requireActivity().onBackPressedDispatcher.addCallback(
-            viewLifecycleOwner, lyricsBackPressedCallback
+            viewLifecycleOwner, modeBackPressedCallback
         )
 
-        // Restore the lyrics mode without animations
-        applyLyricsMode()
+        // Restore the mode without animations
+        applyMode()
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -536,15 +639,6 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
                                 )
                             }
                         }
-                    }
-                }
-
-                launch {
-                    viewModel.playbackParameters.collectLatest {
-                        playbackSpeedMaterialButton.text = getString(
-                            R.string.playback_speed_format,
-                            playbackSpeedFormatter.format(it.speed),
-                        )
                     }
                 }
 
@@ -666,10 +760,6 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
                         repeatMaterialButton.isEnabled = it.contains(
                             Player.COMMAND_SET_REPEAT_MODE
                         )
-
-                        playbackSpeedMaterialButton.isEnabled = it.contains(
-                            Player.COMMAND_SET_SPEED_AND_PITCH
-                        )
                     }
                 }
 
@@ -742,6 +832,18 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
                         }
                     }
                 }
+
+                launch {
+                    queueViewModel.queue.collectLatest { queue ->
+                        queueAdapter.submitQueue(queue) {
+                            val current = queue.indexOfFirst { item -> item.isCurrent }
+                            if (current >= 0 && !queueScrolled && mode == Mode.QUEUE) {
+                                queueRecyclerView?.scrollToPosition(current)
+                                queueScrolled = true
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -764,6 +866,8 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
     override fun onDestroyView() {
         handler.removeCallbacks(resumeLyricsFollowing)
         lyricsRecyclerView?.adapter = null
+        queueItemTouchHelper.attachToRecyclerView(null)
+        queueRecyclerView?.adapter = null
 
         if (isVisualizerStarted) {
             visualizerManager.stop()
@@ -791,13 +895,111 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         }
     }
 
+    private fun openEqualizer() {
+        viewModel.audioSessionId.value?.let { audioSessionId ->
+            audioEffectsStartForResult.launch(
+                Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL).apply {
+                    putExtra(AudioEffect.EXTRA_PACKAGE_NAME, requireContext().packageName)
+                    putExtra(AudioEffect.EXTRA_AUDIO_SESSION, audioSessionId)
+                    putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
+                },
+                null
+            )
+        }
+    }
+
     private fun showLyricsScreen() {
         findNavController().navigateSafe(R.id.action_nowPlayingFragment_to_fragment_lyrics)
     }
 
+    /**
+     * Whether a drag that starts with this touch is allowed to minimize the player. Lists keep
+     * their own vertical gestures.
+     */
+    private fun canStartDismissDrag(event: MotionEvent): Boolean {
+        fun View.isTouched() = isVisible && Rect().let {
+            getGlobalVisibleRect(it) && it.contains(event.rawX.toInt(), event.rawY.toInt())
+        }
+
+        return when {
+            // Items are reordered by dragging them
+            queueRecyclerView?.isTouched() == true -> false
+            lyricsRecyclerView?.isTouched() == true ->
+                lyricsRecyclerView?.canScrollVertically(-1) != true
+
+            nestedScrollView.isTouched() -> !nestedScrollView.canScrollVertically(-1)
+            else -> true
+        }
+    }
+
+    /**
+     * Swiping the cover up shows the queue in its place. The scroll view around the cover steals
+     * the gesture as soon as it moves, so the whole gesture is tracked in screen coordinates from
+     * both views.
+     */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private fun setupCoverSwipe() {
+        if (queueRecyclerView == null) {
+            return
+        }
+
+        var tracking = false
+        var startX = 0f
+        var startY = 0f
+        var velocityTracker: VelocityTracker? = null
+
+        fun finish() {
+            tracking = false
+            velocityTracker?.recycle()
+            velocityTracker = null
+        }
+
+        fun onTouch(event: MotionEvent, fromCover: Boolean): Boolean {
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    finish()
+                    if (fromCover) {
+                        tracking = true
+                        startX = event.rawX
+                        startY = event.rawY
+                        velocityTracker = VelocityTracker.obtain().also { it.addMovement(event) }
+                    }
+                }
+
+                MotionEvent.ACTION_MOVE -> if (tracking) {
+                    velocityTracker?.addMovement(event)
+                }
+
+                MotionEvent.ACTION_UP -> if (tracking) {
+                    velocityTracker?.addMovement(event)
+                    velocityTracker?.computeCurrentVelocity(1000)
+                    val dy = startY - event.rawY
+                    val dx = startX - event.rawX
+                    val velocityY = velocityTracker?.yVelocity ?: 0f
+                    finish()
+
+                    if (dy > COVER_SWIPE_DISTANCE_PX && dy > abs(dx) &&
+                        velocityY < -COVER_SWIPE_VELOCITY
+                    ) {
+                        setMode(Mode.QUEUE, animate = true)
+                    }
+                }
+
+                MotionEvent.ACTION_CANCEL -> if (!fromCover) {
+                    finish()
+                }
+            }
+
+            return fromCover || tracking
+        }
+
+        albumArtMaterialCardView.setOnTouchListener { _, event -> onTouch(event, true) }
+        nestedScrollView.setOnTouchListener { _, event -> onTouch(event, false) }
+    }
+
     private fun onLyricsChanged(
         hasLyrics: Boolean,
-        lines: List<org.lineageos.twelve.models.Lyrics.Line>,
+        lines: List<Lyrics.Line>,
         currentIndex: Int?,
     ) {
         this.hasLyrics = hasLyrics
@@ -810,8 +1012,8 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         lyricsCurrentIndex = focusIndex
 
         lyricsToggleMaterialButton.isVisible = hasLyrics
-        if (!hasLyrics && isLyricsMode) {
-            setLyricsMode(false, animate = true)
+        if (!hasLyrics && mode == Mode.LYRICS) {
+            setMode(Mode.PLAYER, animate = true)
         }
 
         val index = currentIndex ?: 0
@@ -827,75 +1029,95 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
     }
 
     /**
-     * Switch between the player and the lyrics.
+     * Switch between the player, the lyrics and the queue.
      */
-    private fun setLyricsMode(enabled: Boolean, animate: Boolean) {
-        val recyclerView = lyricsRecyclerView ?: return
-        val enabled = enabled && hasLyrics
+    private fun setMode(newMode: Mode, animate: Boolean) {
+        val sceneRoot = topFrameLayout ?: return
+        val smallCover = compactCoverMaterialCardView ?: return
+        val bigCover = albumArtMaterialCardView
 
-        if (isLyricsMode == enabled) {
+        val target = when {
+            newMode == Mode.LYRICS && !hasLyrics -> Mode.PLAYER
+            else -> newMode
+        }
+
+        if (mode == target) {
             return
         }
 
-        val sceneRoot = topFrameLayout
-        val bigCover = albumArtMaterialCardView
-        val smallCover = compactCoverMaterialCardView
+        val wasPlayer = mode == Mode.PLAYER
+        val isPlayer = target == Mode.PLAYER
 
-        if (animate && sceneRoot != null && smallCover != null) {
-            // The cover flies between its two places while everything else cross fades
+        if (animate) {
             TransitionManager.beginDelayedTransition(
                 sceneRoot,
                 TransitionSet().apply {
                     ordering = TransitionSet.ORDERING_TOGETHER
 
-                    addTransition(
-                        MaterialContainerTransform().apply {
-                            startView = if (enabled) bigCover else smallCover
-                            endView = if (enabled) smallCover else bigCover
-                            addTarget(endView!!)
-                            scrimColor = Color.TRANSPARENT
-                            setAllContainerColors(Color.TRANSPARENT)
-                            fadeMode = MaterialContainerTransform.FADE_MODE_CROSS
-                            duration = LYRICS_TRANSITION_MS
-                        }
-                    )
+                    // The cover flies between its two places while everything else cross fades
+                    if (wasPlayer != isPlayer) {
+                        addTransition(
+                            MaterialContainerTransform().apply {
+                                startView = if (isPlayer) smallCover else bigCover
+                                endView = if (isPlayer) bigCover else smallCover
+                                addTarget(endView!!)
+                                scrimColor = Color.TRANSPARENT
+                                setAllContainerColors(Color.TRANSPARENT)
+                                fadeMode = MaterialContainerTransform.FADE_MODE_CROSS
+                                duration = MODE_TRANSITION_MS
+                            }
+                        )
+                    }
 
                     addTransition(
                         Fade().apply {
                             excludeTarget(bigCover, true)
                             excludeTarget(smallCover, true)
-                            duration = LYRICS_TRANSITION_MS
+                            duration = MODE_TRANSITION_MS
                         }
                     )
                 }
             )
         }
 
-        isLyricsMode = enabled
-        applyLyricsMode()
+        mode = target
+        applyMode()
 
-        if (enabled) {
+        if (target == Mode.LYRICS) {
             lastCenteredLyricsIndex = -1
             isLyricsFollowing = true
-            recyclerView.post { centerCurrentLyricsLine(animate = false) }
+            lyricsRecyclerView?.post { centerCurrentLyricsLine(animate = false) }
+        }
+
+        if (target == Mode.QUEUE) {
+            queueViewModel.queue.value.indexOfFirst { it.isCurrent }.takeIf { it >= 0 }?.let {
+                queueRecyclerView?.post { queueRecyclerView?.scrollToPosition(it) }
+            }
+            queueScrolled = true
         }
     }
 
     /**
      * Show the views of the current mode.
      */
-    private fun applyLyricsMode() {
-        if (lyricsRecyclerView == null) {
+    private fun applyMode() {
+        if (modeLinearLayout == null) {
             return
         }
 
-        val showLyrics = isLyricsMode && hasLyrics
+        val mode = when {
+            mode == Mode.LYRICS && !hasLyrics -> Mode.PLAYER
+            else -> mode
+        }
 
-        nestedScrollView.isVisible = !showLyrics
-        lyricsLinearLayout?.isVisible = showLyrics
+        nestedScrollView.isVisible = mode == Mode.PLAYER
+        modeLinearLayout?.isVisible = mode != Mode.PLAYER
+        lyricsRecyclerView?.isVisible = mode == Mode.LYRICS
+        queueLinearLayout?.isVisible = mode == Mode.QUEUE
         lyricsPreviewLinearLayout?.isVisible = hasLyrics
-        lyricsToggleMaterialButton.isChecked = showLyrics
-        lyricsBackPressedCallback.isEnabled = showLyrics
+        lyricsToggleMaterialButton.isChecked = mode == Mode.LYRICS
+        queueMaterialButton.isChecked = mode == Mode.QUEUE
+        modeBackPressedCallback.isEnabled = mode != Mode.PLAYER
     }
 
     /**
@@ -905,7 +1127,7 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         val recyclerView = lyricsRecyclerView ?: return
         val index = lyricsCurrentIndex?.takeIf { it >= 0 } ?: return
 
-        if (!isLyricsMode || !isLyricsFollowing || !recyclerView.isVisible) {
+        if (mode != Mode.LYRICS || !isLyricsFollowing || !recyclerView.isVisible) {
             return
         }
 
@@ -919,7 +1141,7 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
                 targetPosition = index
             }.also { recyclerView.layoutManager?.startSmoothScroll(it) }
 
-            false -> (recyclerView.layoutManager as? androidx.recyclerview.widget.LinearLayoutManager)
+            false -> (recyclerView.layoutManager as? LinearLayoutManager)
                 ?.scrollToPositionWithOffset(index, recyclerView.paddingTop)
         }
     }
@@ -927,14 +1149,12 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
     companion object {
         private val LOG_TAG = NowPlayingFragment::class.simpleName!!
 
-        private const val STATE_LYRICS_MODE = "lyrics_mode"
+        private const val STATE_MODE = "mode"
 
         private const val LYRICS_PREVIEW_BLUR_RADIUS = 3f
-        private const val LYRICS_TRANSITION_MS = 420L
+        private const val MODE_TRANSITION_MS = 420L
         private const val LYRICS_RESUME_FOLLOW_MS = 3500L
-
-        private val decimalFormatSymbols = DecimalFormatSymbols(Locale.ROOT)
-
-        private val playbackSpeedFormatter = DecimalFormat("0.#", decimalFormatSymbols)
+        private const val COVER_SWIPE_DISTANCE_PX = 120f
+        private const val COVER_SWIPE_VELOCITY = 500f
     }
 }

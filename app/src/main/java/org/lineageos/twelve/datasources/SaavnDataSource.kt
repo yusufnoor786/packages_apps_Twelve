@@ -13,6 +13,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapLatest
@@ -71,6 +73,19 @@ class SaavnDataSource(
                 size > SONG_CACHE_SIZE
         }
     )
+
+    /**
+     * Bumped to run the requests again, see [refresh].
+     */
+    private val refreshTick = MutableStateFlow(0)
+
+    /**
+     * Forget the cached content and load it again.
+     */
+    fun refresh() {
+        client.clearCache()
+        refreshTick.value++
+    }
 
     private val maxQuality: SaavnStream.Quality
         get() = sharedPreferences.onlineAudioQuality
@@ -624,7 +639,7 @@ class SaavnDataSource(
      */
     private fun <T> withLibrary(
         block: suspend (StoredLibrary) -> Result<T, Error>,
-    ): Flow<Result<T, Error>> = store.library
+    ): Flow<Result<T, Error>> = combine(store.library, refreshTick) { library, _ -> library }
         .mapLatest { library ->
             try {
                 block(library)

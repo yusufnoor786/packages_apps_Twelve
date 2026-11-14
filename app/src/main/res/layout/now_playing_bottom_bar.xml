@@ -14,6 +14,7 @@
     <com.google.android.material.button.MaterialButton
         android:id="@+id/lyricsToggleMaterialButton"
         style="@style/Theme.Twelve.NowPlayingFragment.BottomBarButton"
+        android:layout_marginHorizontal="20dp"
         android:checkable="true"
         android:contentDescription="@string/lyrics"
         android:tooltipText="@string/lyrics"
@@ -22,40 +23,20 @@
         tools:visibility="visible" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/playbackSpeedMaterialButton"
+        android:id="@+id/isFavoriteMaterialButton"
         style="@style/Theme.Twelve.NowPlayingFragment.BottomBarButton"
-        android:tooltipText="@string/playback_speed"
-        tools:text="1×" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/audioInformationMaterialButton"
-        style="@style/Theme.Twelve.NowPlayingFragment.BottomBarButton"
-        android:tooltipText="@string/audio_information"
-        app:icon="@drawable/ic_info" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/equalizerMaterialButton"
-        style="@style/Theme.Twelve.NowPlayingFragment.BottomBarButton"
-        android:tooltipText="@string/audio_effects"
-        app:icon="@drawable/ic_audiofx" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/visualizerMaterialButton"
-        style="@style/Theme.Twelve.NowPlayingFragment.BottomBarButton"
-        android:tooltipText="@string/visualizer"
-        app:icon="@drawable/ic_graphic_eq" />
+        android:layout_marginHorizontal="20dp"
+        android:tooltipText="@string/add_to_favorites"
+        android:visibility="gone"
+        app:icon="@drawable/ic_heart_unfilled" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/queueMaterialButton"
         style="@style/Theme.Twelve.NowPlayingFragment.BottomBarButton"
+        android:layout_marginHorizontal="20dp"
+        android:checkable="true"
+        android:contentDescription="@string/queue"
         android:tooltipText="@string/queue"
         app:icon="@drawable/ic_queue_play_next" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/isFavoriteMaterialButton"
-        style="@style/Theme.Twelve.NowPlayingFragment.BottomBarButton"
-        android:tooltipText="@string/add_to_favorites"
-        android:visibility="gone"
-        app:icon="@drawable/ic_heart_unfilled" />
 
 </LinearLayout>

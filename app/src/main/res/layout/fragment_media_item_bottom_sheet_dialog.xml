@@ -135,6 +135,30 @@
             app:leadingIconImage="@drawable/ic_playlist_add" />
 
         <org.lineageos.twelve.ui.views.ListItem
+            android:id="@+id/playbackSpeedListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:headlineText="@string/playback_speed"
+            app:leadingIconImage="@drawable/ic_double_arrow" />
+
+        <org.lineageos.twelve.ui.views.ListItem
+            android:id="@+id/equalizerListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:headlineText="@string/audio_effects"
+            app:leadingIconImage="@drawable/ic_audiofx" />
+
+        <org.lineageos.twelve.ui.views.ListItem
+            android:id="@+id/visualizerListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:headlineText="@string/visualizer"
+            app:leadingIconImage="@drawable/ic_graphic_eq" />
+
+        <org.lineageos.twelve.ui.views.ListItem
             android:id="@+id/openAlbumListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

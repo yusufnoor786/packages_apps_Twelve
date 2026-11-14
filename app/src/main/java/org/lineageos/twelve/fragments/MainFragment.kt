@@ -75,6 +75,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     private val navigationBarView by getViewProperty<NavigationBarView>(R.id.navigationBarView)
     private val playRandomSongsButton by getViewProperty<MaterialButton>(R.id.playRandomSongsButton)
     private val providerMaterialButton by getViewProperty<MaterialButton>(R.id.providerMaterialButton)
+    private val refreshMaterialButton by getViewProperty<MaterialButton>(R.id.refreshMaterialButton)
     private val searchLinearProgressIndicator by getViewProperty<LinearProgressIndicator>(R.id.searchLinearProgressIndicator)
     private val searchNoElementsLinearLayout by getViewProperty<LinearLayout>(R.id.searchNoElementsLinearLayout)
     private val searchRecyclerView by getViewProperty<RecyclerView>(R.id.searchRecyclerView)
@@ -353,6 +354,10 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             }
         }
 
+        refreshMaterialButton.setOnClickListener {
+            viewModel.refreshOnline()
+        }
+
         settingsMaterialButton.setOnClickListener {
             val intent = Intent(context, SettingsActivity::class.java)
             startActivity(intent)
@@ -422,6 +427,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
 
                         // The provider chooser is only meaningful for the offline sources
                         providerMaterialButton.isVisible = !onlineMode
+                        refreshMaterialButton.isVisible = onlineMode
                     }
                 }
 

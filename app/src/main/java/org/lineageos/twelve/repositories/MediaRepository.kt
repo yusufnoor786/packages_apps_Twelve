@@ -121,7 +121,7 @@ class MediaRepository(
      */
     private val saavnDataSource = OkHttpClient.Builder().cache(cache).build().let { okHttpClient ->
         SaavnDataSource(
-            SaavnClient(okHttpClient),
+            SaavnClient(okHttpClient, File(context.cacheDir, ONLINE_CACHE_DIRECTORY_NAME)),
             LyricsClient(okHttpClient),
             SaavnLibraryStore(File(context.filesDir, ONLINE_LIBRARY_FILE_NAME)),
             sharedPreferences,
@@ -228,6 +228,11 @@ class MediaRepository(
     fun setOnlineMode(onlineMode: Boolean) {
         sharedPreferences.onlineMode = onlineMode
     }
+
+    /**
+     * Load the online content again instead of showing what was stored.
+     */
+    fun refreshOnline() = saavnDataSource.refresh()
 
     /**
      * Delete all local stats entries.
@@ -497,6 +502,7 @@ class MediaRepository(
 
     companion object {
         private const val ONLINE_LIBRARY_FILE_NAME = "online_library.json"
+        private const val ONLINE_CACHE_DIRECTORY_NAME = "online_responses"
 
         val defaultAlbumsSortingRule = SortingRule(
             SortingStrategy.CREATION_DATE, true

@@ -46,6 +46,18 @@
                 tools:icon="@drawable/ic_shelves"
                 tools:text="Pixel 7 Pro" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/refreshMaterialButton"
+                style="?attr/materialIconButtonFilledTonalStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="@string/refresh"
+                android:tooltipText="@string/refresh"
+                android:visibility="gone"
+                app:icon="@drawable/ic_sync" />
+
         </com.google.android.material.appbar.MaterialToolbar>
 
         <com.google.android.material.button.MaterialButtonToggleGroup

@@ -9,4 +9,5 @@
     <dimen name="now_playing_bar_margin_vertical">8dp</dimen>
     <dimen name="now_playing_bar_corner_radius">28dp</dimen>
     <dimen name="now_playing_bar_elevation">6dp</dimen>
+    <dimen name="queue_item_padding">16dp</dimen>
 </resources>

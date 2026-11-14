@@ -43,6 +43,10 @@ class MainViewModel(application: Application) : TwelveViewModel(application) {
             sharedPreferences.onlineMode,
         )
 
+    fun refreshOnline() {
+        mediaRepository.refreshOnline()
+    }
+
     fun setOnlineMode(onlineMode: Boolean) {
         mediaRepository.setOnlineMode(onlineMode)
     }
