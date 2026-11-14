@@ -422,9 +422,6 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
 
         // Swipe down to minimize the player
         swipeToDismissLayout.canStartDrag = ::canStartDismissDrag
-        swipeToDismissLayout.onOffsetChanged = { offset ->
-            (requireActivity() as MainActivity).setNowPlayingBarCovered(offset <= 0f)
-        }
         swipeToDismissLayout.onDismissed = {
             // Already out of the screen
             (requireActivity() as MainActivity).closeNowPlaying(animated = false)

@@ -20,7 +20,8 @@
         app:defaultNavHost="true"
         app:navGraph="@navigation/fragment_main" />
 
-    <!-- Under the player, so that it is already there when the player is dragged away -->
+    <!-- Under the player (which has a higher elevation), so that it is already there when the
+         player is dragged away -->
     <org.lineageos.twelve.ui.views.NowPlayingBar
         android:id="@+id/nowPlayingBar"
         android:layout_width="match_parent"
@@ -34,6 +35,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clickable="true"
+        android:elevation="48dp"
         android:focusable="true"
         android:visibility="gone" />
 
