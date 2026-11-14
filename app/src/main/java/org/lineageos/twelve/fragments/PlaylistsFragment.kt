@@ -35,6 +35,9 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.lineageos.twelve.models.ProviderType
 import org.lineageos.twelve.utils.SharedPlaylist
+import org.lineageos.twelve.datasources.spotify.SpotifyClient
+import org.lineageos.twelve.utils.ImportedPlaylist
+import org.lineageos.twelve.utils.PlaylistImport
 import org.lineageos.twelve.R
 import org.lineageos.twelve.ext.getViewProperty
 import org.lineageos.twelve.ext.navigateSafe
@@ -174,7 +177,7 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
 
         MaterialAlertDialogBuilder(context)
             .setTitle(R.string.import_playlist)
-            .setMessage(R.string.import_playlist_hint)
+            .setMessage(R.string.import_playlist_hint_all)
             .setView(container)
             .setPositiveButton(R.string.import_playlist_positive) { _, _ ->
                 importPlaylist(editText.text.toString())
@@ -186,18 +189,113 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
             .show()
     }
 
+    /**
+     * Import whatever was pasted or opened: a playlist of Twelve, a Spotify link, a list of songs.
+     */
     private fun importPlaylist(text: String) {
-        val playlist = SharedPlaylist.parse(text)
-        if (playlist == null) {
-            Toast.makeText(requireContext(), R.string.import_playlist_invalid, Toast.LENGTH_LONG)
-                .show()
+        val context = requireContext()
+
+        // A playlist of Twelve already has the songs
+        SharedPlaylist.parse(text)?.let { playlist ->
+            viewModel.importOnlinePlaylist(playlist.name, playlist.songs.map { it.id })
+            Toast.makeText(
+                context,
+                getString(R.string.import_playlist_done, playlist.name, playlist.songs.size),
+                Toast.LENGTH_LONG,
+            ).show()
             return
         }
 
-        viewModel.importOnlinePlaylist(playlist.name, playlist.songs.map { it.id })
+        viewLifecycleOwner.lifecycleScope.launch {
+            val spotifyId = PlaylistImport.spotifyPlaylistId(text)
+
+            val playlist = when {
+                spotifyId != null -> {
+                    if (!viewModel.hasSpotifyCredentials) {
+                        Toast.makeText(
+                            context, R.string.import_spotify_credentials, Toast.LENGTH_LONG
+                        ).show()
+                        return@launch
+                    }
+
+                    when (val result = viewModel.spotifyPlaylist(spotifyId)) {
+                        is SpotifyClient.Result.Success -> result.playlist
+
+                        SpotifyClient.Result.NotAuthorized -> {
+                            Toast.makeText(
+                                context, R.string.import_spotify_credentials, Toast.LENGTH_LONG
+                            ).show()
+                            return@launch
+                        }
+
+                        SpotifyClient.Result.NotFound -> {
+                            Toast.makeText(
+                                context, R.string.import_spotify_not_found, Toast.LENGTH_LONG
+                            ).show()
+                            return@launch
+                        }
+
+                        SpotifyClient.Result.Failed -> {
+                            Toast.makeText(context, R.string.import_failed, Toast.LENGTH_LONG)
+                                .show()
+                            return@launch
+                        }
+                    }
+                }
+
+                else -> PlaylistImport.parseText(
+                    getString(R.string.import_playlist), text
+                )
+            }
+
+            if (playlist == null) {
+                Toast.makeText(context, R.string.import_playlist_invalid, Toast.LENGTH_LONG)
+                    .show()
+                return@launch
+            }
+
+            matchAndImport(playlist)
+        }
+    }
+
+    private suspend fun matchAndImport(playlist: ImportedPlaylist) {
+        val context = requireContext()
+
+        val progressBar = LinearProgressIndicator(context).apply {
+            max = playlist.tracks.size
+            isIndeterminate = false
+        }
+        val container = FrameLayout(context).apply {
+            val padding = (24 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding / 2, padding, 0)
+            addView(progressBar)
+        }
+        val dialog = MaterialAlertDialogBuilder(context)
+            .setTitle(playlist.name)
+            .setMessage(getString(R.string.import_matching, 0, playlist.tracks.size))
+            .setView(container)
+            .setCancelable(false)
+            .show()
+
+        val result = try {
+            viewModel.importOnlinePlaylist(playlist) { done, total ->
+                view?.post {
+                    progressBar.setProgressCompat(done, true)
+                    dialog.setMessage(getString(R.string.import_matching, done, total))
+                }
+            }
+        } finally {
+            dialog.dismiss()
+        }
+
         Toast.makeText(
-            requireContext(),
-            getString(R.string.import_playlist_done, playlist.name, playlist.songs.size),
+            context,
+            when (result.uri) {
+                null -> getString(R.string.import_nothing_found)
+                else -> getString(
+                    R.string.import_matched, playlist.name, result.matched, result.total
+                )
+            },
             Toast.LENGTH_LONG,
         ).show()
     }

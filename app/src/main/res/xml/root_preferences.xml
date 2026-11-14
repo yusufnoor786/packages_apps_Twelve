@@ -85,6 +85,18 @@
             app:title="@string/online_audio_quality_mobile"
             app:useSimpleSummaryProvider="true" />
 
+        <EditTextPreference
+            app:iconSpaceReserved="false"
+            app:key="spotify_client_id"
+            app:summary="@string/spotify_import_summary"
+            app:title="@string/spotify_client_id" />
+
+        <EditTextPreference
+            app:iconSpaceReserved="false"
+            app:key="spotify_client_secret"
+            app:summary="@string/spotify_import_summary"
+            app:title="@string/spotify_client_secret" />
+
         <MultiSelectListPreference
             app:defaultValue="@array/online_languages_default"
             app:entries="@array/online_languages_entries"

@@ -6,6 +6,10 @@
 package org.lineageos.twelve.repositories
 
 import android.content.Context
+import org.lineageos.twelve.utils.ImportedPlaylist
+import org.lineageos.twelve.ext.SPOTIFY_CLIENT_SECRET_KEY
+import org.lineageos.twelve.ext.SPOTIFY_CLIENT_ID_KEY
+import org.lineageos.twelve.datasources.spotify.SpotifyClient
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.Uri
@@ -243,6 +247,42 @@ class MediaRepository(
      */
     fun importOnlinePlaylist(name: String, songIds: List<String>) =
         saavnDataSource.importPlaylist(name, songIds)
+
+    /**
+     * The result of importing a playlist of another service.
+     *
+     * @param matched How many of the [total] tracks were found in the catalog
+     */
+    data class ImportResult(val uri: Uri?, val matched: Int, val total: Int)
+
+    /**
+     * Match the tracks of a playlist of another service to the online catalog and keep the ones
+     * that were found as a new playlist.
+     */
+    suspend fun importOnlinePlaylist(
+        playlist: ImportedPlaylist,
+        onProgress: (done: Int, total: Int) -> Unit,
+    ): ImportResult {
+        val ids = saavnDataSource.matchTracks(playlist.tracks) {
+            onProgress(it, playlist.tracks.size)
+        }.filterNotNull().distinct()
+
+        val uri = ids.takeIf { it.isNotEmpty() }
+            ?.let { saavnDataSource.importPlaylist(playlist.name, it) }
+
+        return ImportResult(uri, ids.size, playlist.tracks.size)
+    }
+
+    /**
+     * Read a public playlist of Spotify, with the credentials the user entered in the settings.
+     */
+    suspend fun spotifyPlaylist(playlistId: String): SpotifyClient.Result = SpotifyClient(
+        spotifyHttpClient,
+        sharedPreferences.getString(SPOTIFY_CLIENT_ID_KEY, null).orEmpty(),
+        sharedPreferences.getString(SPOTIFY_CLIENT_SECRET_KEY, null).orEmpty(),
+    ).playlist(playlistId)
+
+    private val spotifyHttpClient = OkHttpClient()
 
     /**
      * Delete all local stats entries.

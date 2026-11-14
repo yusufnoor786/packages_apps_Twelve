@@ -19,6 +19,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import org.lineageos.twelve.utils.ImportTrack
+import org.lineageos.twelve.utils.PlaylistImport
 import org.lineageos.twelve.R
 import org.lineageos.twelve.datasources.saavn.LyricsClient
 import org.lineageos.twelve.datasources.saavn.SaavnAlbum
@@ -561,6 +565,52 @@ class SaavnDataSource(
         }.flowOn(Dispatchers.IO)
 
     /**
+     * Find the song of the catalog each track names.
+     *
+     * @param onProgress Called with the number of tracks looked at so far
+     * @return The id of the song found for every track, null where there was none
+     */
+    suspend fun matchTracks(
+        tracks: List<ImportTrack>,
+        onProgress: (Int) -> Unit = {},
+    ): List<String?> = coroutineScope {
+        val gate = Semaphore(MATCH_PARALLELISM)
+        var done = 0
+
+        tracks.map { track ->
+            async {
+                gate.withPermit {
+                    val query = listOfNotNull(
+                        PlaylistImport.normalize(track.title),
+                        track.artist?.split(',', '&')?.firstOrNull()?.let {
+                            PlaylistImport.normalize(it)
+                        },
+                    ).joinToString(" ")
+
+                    val candidates = client.searchSongs(query, count = MATCH_CANDIDATES).data()
+                        ?.let { SaavnParser.results(it) }.orEmpty()
+                        .mapNotNull { SaavnParser.song(it) }
+
+                    val best = candidates.map { song ->
+                        song to PlaylistImport.score(
+                            track,
+                            song.title,
+                            song.artists.map { it.name },
+                            song.durationSeconds,
+                        )
+                    }.maxByOrNull { it.second }
+
+                    synchronized(this@SaavnDataSource) { onProgress(++done) }
+
+                    best?.takeIf { it.second >= PlaylistImport.MINIMUM_SCORE }?.first?.also {
+                        songCache[it.id] = it
+                    }?.id
+                }
+            }
+        }.map { it.await() }
+    }
+
+    /**
      * Add a playlist that came from outside: a file, a friend, another service.
      */
     fun importPlaylist(name: String, songIds: List<String>): Uri =
@@ -857,6 +907,9 @@ class SaavnDataSource(
         private fun audioUri(id: String) = catalogUri(PATH_AUDIO, id)
         private fun albumUri(id: String) = catalogUri(PATH_ALBUM, id)
         private fun artistUri(id: String) = catalogUri(PATH_ARTIST, id)
+        private const val MATCH_PARALLELISM = 6
+        private const val MATCH_CANDIDATES = 8
+
         private fun playlistUri(id: String) = catalogUri(PATH_PLAYLIST, id)
         private fun genreUri(language: String) = catalogUri(PATH_GENRE, language)
         private fun userPlaylistUri(id: Long) = catalogUri(

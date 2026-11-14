@@ -52,6 +52,20 @@ abstract class TwelveViewModel(application: Application) : AndroidViewModel(appl
      */
     fun importOnlinePlaylist(name: String, songIds: List<String>) =
         mediaRepository.importOnlinePlaylist(name, songIds)
+
+    suspend fun importOnlinePlaylist(
+        playlist: org.lineageos.twelve.utils.ImportedPlaylist,
+        onProgress: (done: Int, total: Int) -> Unit,
+    ) = mediaRepository.importOnlinePlaylist(playlist, onProgress)
+
+    suspend fun spotifyPlaylist(playlistId: String) = mediaRepository.spotifyPlaylist(playlistId)
+
+    val hasSpotifyCredentials: Boolean
+        get() = !sharedPreferences.getString(
+            org.lineageos.twelve.ext.SPOTIFY_CLIENT_ID_KEY, null
+        ).isNullOrBlank() && !sharedPreferences.getString(
+            org.lineageos.twelve.ext.SPOTIFY_CLIENT_SECRET_KEY, null
+        ).isNullOrBlank()
     protected val providersRepository = getApplication<TwelveApplication>().providersRepository
     protected val outputConfigurationRepository =
         getApplication<TwelveApplication>().outputConfigurationRepository

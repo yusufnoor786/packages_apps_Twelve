@@ -137,6 +137,9 @@ val SharedPreferences.onlineAudioQuality: SaavnStream.Quality
 val SharedPreferences.onlineAudioQualityMobile: SaavnStream.Quality
     get() = quality(ONLINE_AUDIO_QUALITY_MOBILE_KEY, ONLINE_AUDIO_QUALITY_MOBILE_DEFAULT)
 
+const val SPOTIFY_CLIENT_ID_KEY = "spotify_client_id"
+const val SPOTIFY_CLIENT_SECRET_KEY = "spotify_client_secret"
+
 const val ONLINE_LANGUAGES_KEY = "online_languages"
 private val ONLINE_LANGUAGES_DEFAULT = listOf("hindi", "english")
 val SharedPreferences.onlineLanguages: List<String>
