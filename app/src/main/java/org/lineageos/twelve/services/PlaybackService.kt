@@ -51,6 +51,8 @@ import org.lineageos.twelve.R
 import org.lineageos.twelve.TwelveApplication
 import org.lineageos.twelve.ext.Bundle
 import org.lineageos.twelve.ext.autoplay
+import org.lineageos.twelve.ext.automix
+import org.lineageos.twelve.services.automix.AutomixPlanner
 import org.lineageos.twelve.ext.crossfadeSeconds
 import org.lineageos.twelve.ext.enableFloatOutput
 import org.lineageos.twelve.ext.enableOffload
@@ -173,6 +175,7 @@ class PlaybackService : MediaLibraryService() {
 
     private lateinit var player: ExoPlayer
     private lateinit var crossfadeController: CrossfadeController
+    private lateinit var automixPlanner: AutomixPlanner
     private lateinit var mediaLibrarySession: MediaLibrarySession
 
     private val mediaRepositoryTree by lazy {
@@ -251,6 +254,20 @@ class PlaybackService : MediaLibraryService() {
      * Keeps a long queue of similar songs ahead of the one that is playing: when it runs short
      * the suggestions for its last song are appended, until enough songs are waiting.
      */
+    /**
+     * Automix listens to the end of this song and the start of the next one in advance.
+     */
+    private fun prepareAutomix() {
+        if (!sharedPreferences.automix || !player.hasNextMediaItem()) {
+            return
+        }
+
+        automixPlanner.prepare(
+            player.currentMediaItem,
+            player.getMediaItemAt(player.nextMediaItemIndex),
+        )
+    }
+
     private fun loadAutoplay() {
         if (!sharedPreferences.autoplay) {
             return
@@ -577,12 +594,30 @@ class PlaybackService : MediaLibraryService() {
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
 
+        automixPlanner = AutomixPlanner(this, lifecycleScope)
         crossfadeController = CrossfadeController(
             this,
             player,
             audioAttributes,
-            fadeMs = { sharedPreferences.crossfadeSeconds * 1000L },
+            fadeMs = {
+                // Automix blends even where no crossfade was asked for
+                when (sharedPreferences.automix) {
+                    true -> maxOf(sharedPreferences.crossfadeSeconds * 1000L, AUTOMIX_FADE_MS)
+                    false -> sharedPreferences.crossfadeSeconds * 1000L
+                }
+            },
+            plan = { outgoing, incoming, defaultFadeMs ->
+                when (sharedPreferences.automix) {
+                    true -> automixPlanner.plan(outgoing, incoming, defaultFadeMs)
+                    false -> null
+                }
+            },
         )
+        player.addListener(object : Player.Listener {
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) = prepareAutomix()
+
+            override fun onTimelineChanged(timeline: Timeline, reason: Int) = prepareAutomix()
+        })
 
         mediaLibrarySession = MediaLibrarySession.Builder(
             this, player, mediaLibrarySessionCallback
@@ -818,6 +853,7 @@ class PlaybackService : MediaLibraryService() {
     companion object {
         private val LOG_TAG = PlaybackService::class.simpleName!!
 
+        private const val AUTOMIX_FADE_MS = 12_000L
         private const val AUTOPLAY_BATCH_SIZE = 20
         private const val AUTOPLAY_TARGET = 24
         private const val AUTOPLAY_REFILL_BELOW = 10

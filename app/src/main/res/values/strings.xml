@@ -90,6 +90,8 @@
     <string name="audio_effects">Audio effects</string>
     <string name="playback_speed">Playback speed</string>
     <string name="volume">Volume</string>
+    <string name="automix">Automix (beta)</string>
+    <string name="automix_summary">Songs run into each other like a DJ mix: tempos are matched and the blend lands on a beat. Needs about ten seconds to listen to the songs</string>
     <string name="crossfade">Crossfade</string>
     <string name="crossfade_summary">Seconds two songs overlap, 0 plays them gapless</string>
     <string name="share_playlist">Share playlist</string>

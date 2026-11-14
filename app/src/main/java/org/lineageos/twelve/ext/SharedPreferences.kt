@@ -64,6 +64,17 @@ var SharedPreferences.enableFloatOutput: Boolean
         putBoolean(ENABLE_FLOAT_OUTPUT_KEY, value)
     }
 
+const val AUTOMIX_KEY = "automix"
+
+/**
+ * Automix (beta): songs run into each other on the beat, with their tempos matched.
+ */
+var SharedPreferences.automix: Boolean
+    get() = getBoolean(AUTOMIX_KEY, false)
+    set(value) = edit {
+        putBoolean(AUTOMIX_KEY, value)
+    }
+
 const val CROSSFADE_SECONDS_KEY = "crossfade_seconds"
 
 /**

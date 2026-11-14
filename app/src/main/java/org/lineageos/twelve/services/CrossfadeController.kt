@@ -55,11 +55,16 @@ class CrossfadeController(
      * @param incomingSpeed Playback speed the incoming song starts at, it glides back to normal
      *   during the fade, so that its tempo meets the one of the outgoing song
      * @param incomingStartMs Where in the incoming song the fade starts
+     * @param outgoingBeatMs Length of a beat of the outgoing song, if known: the fade then waits
+     *   for a beat to start on
+     * @param outgoingBeatOffsetMs Where a beat of the outgoing song falls
      */
     data class TransitionPlan(
         val fadeMs: Long,
         val incomingSpeed: Float = 1f,
         val incomingStartMs: Long = 0L,
+        val outgoingBeatMs: Double? = null,
+        val outgoingBeatOffsetMs: Double? = null,
     )
 
     private enum class State { IDLE, PREROLL, FADING }
@@ -69,6 +74,7 @@ class CrossfadeController(
     private var state = State.IDLE
 
     private var currentPlan = TransitionPlan(0)
+    private var pendingPlan: TransitionPlan? = null
     private var fadeStartedAt = 0L
     private var lastAlignAt = 0L
     private var isSelfSeeking = false
@@ -85,6 +91,8 @@ class CrossfadeController(
                 this,
                 when (state) {
                     State.FADING -> FADE_TICK_MS
+                    // Waiting for a beat needs a closer look
+                    State.PREROLL -> PREROLL_TICK_MS
                     else -> IDLE_TICK_MS
                 }
             )
@@ -170,10 +178,9 @@ class CrossfadeController(
         when {
             state == State.IDLE && remaining <= effective + PREROLL_MS -> preroll(item!!)
             state == State.PREROLL -> {
-                if (remaining <= effective) {
-                    startFade(effective)
-                } else {
-                    align()
+                when {
+                    remaining > effective -> align()
+                    isOnBeat(remaining, effective) -> startFade(min(effective, remaining))
                 }
             }
         }
@@ -190,6 +197,7 @@ class CrossfadeController(
         helper.prepare()
         helper.seekTo(player.currentPosition + PREROLL_LATENCY_MS)
         helper.playWhenReady = true
+        pendingPlan = null
         state = State.PREROLL
         lastAlignAt = SystemClock.uptimeMillis()
     }
@@ -211,6 +219,27 @@ class CrossfadeController(
         }
     }
 
+    /**
+     * Whether the fade can start now: at once, or when a beat of the outgoing song falls on the
+     * position (a plan that knows the beats waits for one, but never longer than half a second).
+     */
+    private fun isOnBeat(remaining: Long, effective: Long): Boolean {
+        val outgoing = player.currentMediaItem ?: return true
+        val planned = pendingPlan
+            ?: plan(outgoing, player.getMediaItemAt(player.nextMediaItemIndex), effective)
+                .also { pendingPlan = it }
+            ?: return true
+
+        val beatMs = planned.outgoingBeatMs ?: return true
+        val offset = planned.outgoingBeatOffsetMs ?: return true
+        if (effective - remaining > MAX_BEAT_WAIT_MS) {
+            return true
+        }
+
+        val sinceBeat = (player.currentPosition - offset).mod(beatMs)
+        return sinceBeat < BEAT_TOLERANCE_MS || beatMs - sinceBeat < BEAT_TOLERANCE_MS
+    }
+
     private fun startFade(effectiveFadeMs: Long) {
         val helper = helper ?: return
         val outgoing = player.currentMediaItem ?: return
@@ -222,9 +251,13 @@ class CrossfadeController(
         }
 
         val incoming = player.getMediaItemAt(player.nextMediaItemIndex)
-        val chosen = plan(outgoing, incoming, effectiveFadeMs)
+        val chosen = pendingPlan ?: plan(outgoing, incoming, effectiveFadeMs)
             ?: TransitionPlan(effectiveFadeMs)
-        currentPlan = chosen.copy(fadeMs = chosen.fadeMs.coerceAtLeast(MIN_FADE_MS))
+        pendingPlan = null
+        // It ends when the song does
+        currentPlan = chosen.copy(
+            fadeMs = chosen.fadeMs.coerceIn(MIN_FADE_MS, effectiveFadeMs.coerceAtLeast(MIN_FADE_MS))
+        )
 
         helper.volume = 1f
         player.volume = 0f
@@ -300,6 +333,7 @@ class CrossfadeController(
 
         private const val IDLE_TICK_MS = 100L
         private const val FADE_TICK_MS = 16L
+        private const val PREROLL_TICK_MS = 20L
 
         // How early the helper starts rolling before the fade
         private const val PREROLL_MS = 3000L
@@ -309,6 +343,8 @@ class CrossfadeController(
         private const val ALIGN_EVERY_MS = 400L
         private const val ALIGN_TOLERANCE_MS = 60L
 
+        private const val MAX_BEAT_WAIT_MS = 500L
+        private const val BEAT_TOLERANCE_MS = 25.0
         private const val MIN_SONG_MS = 8_000L
         private const val MIN_FADE_MS = 500L
     }
