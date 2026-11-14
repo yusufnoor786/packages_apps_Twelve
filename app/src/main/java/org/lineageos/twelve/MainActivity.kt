@@ -9,12 +9,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.graphics.Bitmap
-import android.os.Handler
-import android.os.Looper
-import android.view.PixelCopy
 import android.widget.FrameLayout
-import android.widget.ImageView
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -28,6 +23,11 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.DialogFragmentNavigator
+import androidx.activity.OnBackPressedCallback
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.DecelerateInterpolator
+import kotlinx.coroutines.flow.MutableStateFlow
+import org.lineageos.twelve.fragments.NowPlayingFragment
 import androidx.navigation.fragment.NavHostFragment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     // Views
     private val frameLayout by lazy { findViewById<FrameLayout>(R.id.linearLayout) }
-    private val homeSnapshotImageView by lazy { findViewById<ImageView>(R.id.homeSnapshotImageView) }
+    private val nowPlayingContainer by lazy { findViewById<FrameLayout>(R.id.nowPlayingContainer) }
     private val nowPlayingBar by lazy { findViewById<NowPlayingBar>(R.id.nowPlayingBar) }
 
     // NavController
@@ -76,6 +76,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        onBackPressedDispatcher.addCallback(this, nowPlayingBackCallback)
 
         // Enable edge-to-edge
         enableEdgeToEdge()
@@ -119,21 +121,12 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         navController.addOnDestinationChangedListener { _, destination, _ ->
             frameLayout.post { updateNowPlayingBarPlacement() }
 
-            // The screen below the player is rebuilt when it is closed, keep showing it meanwhile
-            if (destination.id !in nowPlayingRelatedRouteIds && homeSnapshotImageView.isVisible) {
-                // Covers the screen while it is rebuilt
-                homeSnapshotImageView.bringToFront()
-
-                frameLayout.postDelayed({
-                    if (navController.currentDestination?.id !in nowPlayingRelatedRouteIds) {
-                        homeSnapshotImageView.isVisible = false
-                        homeSnapshotImageView.setImageDrawable(null)
-
-                        // Back below everything, where the next player slides over it
-                        frameLayout.removeView(homeSnapshotImageView)
-                        frameLayout.addView(homeSnapshotImageView, 0)
-                    }
-                }, HOME_SNAPSHOT_HIDE_DELAY_MS)
+            // Something else was opened from the player (an album, the lyrics...), it goes away
+            if (isNowPlayingOpen
+                && destination !is DialogFragmentNavigator.Destination
+                && destination.id != R.id.mainFragment
+            ) {
+                closeNowPlaying(animated = false)
             }
         }
 
@@ -143,7 +136,15 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
         // Now playing bar
         nowPlayingBar.setOnClickListener {
-            navigateToNowPlayingFragment()
+            openNowPlaying()
+        }
+
+        // The player may have survived a configuration change
+        if (supportFragmentManager.findFragmentById(R.id.nowPlayingContainer) != null) {
+            isNowPlayingOpen = true
+            nowPlayingContainer.isVisible = true
+            isNowPlayingOpenFlow.value = true
+            nowPlayingBackCallback.isEnabled = true
         }
 
         nowPlayingBar.setOnPlayPauseClickListener {
@@ -183,7 +184,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                         }
 
                         IntentsViewModel.ParsedIntent.Action.OPEN_NOW_PLAYING -> {
-                            navigateToNowPlayingFragment()
+                            openNowPlaying()
                         }
 
                         IntentsViewModel.ParsedIntent.Action.VIEW -> {
@@ -256,24 +257,9 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         launch {
             combine(
                 nowPlayingViewModel.mediaItem,
-                navController.visibleEntries,
-            ) { mediaItem, visibleEntries ->
-                mediaItem != null && run {
-                    var shouldBeVisible = true
-
-                    for (i in visibleEntries.lastIndex downTo 0) {
-                        when (val destination = visibleEntries[i].destination) {
-                            is DialogFragmentNavigator.Destination -> continue
-
-                            else -> {
-                                shouldBeVisible = destination.id !in nowPlayingRelatedRouteIds
-                                break
-                            }
-                        }
-                    }
-
-                    shouldBeVisible
-                }
+                isNowPlayingOpenFlow,
+            ) { mediaItem, isNowPlayingOpen ->
+                mediaItem != null && !isNowPlayingOpen
             }
                 .distinctUntilChanged()
                 .flowOn(Dispatchers.IO)
@@ -371,60 +357,88 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         }
     }
 
-    private var isOpeningNowPlaying = false
+    private var isNowPlayingOpen = false
+    private val isNowPlayingOpenFlow = MutableStateFlow(false)
 
-    private fun navigateToNowPlayingFragment() {
-        if (isOpeningNowPlaying) {
-            return
+    private val nowPlayingBackCallback = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            closeNowPlaying()
         }
-        isOpeningNowPlaying = true
-
-        // Copied from the window before the player covers the screen, images that live on the
-        // GPU can't be drawn any other way
-        val width = frameLayout.width
-        val height = frameLayout.height
-        if (width <= 0 || height <= 0) {
-            openNowPlaying()
-            return
-        }
-
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        runCatching {
-            PixelCopy.request(window, bitmap, { result ->
-                if (result == PixelCopy.SUCCESS) {
-                    homeSnapshotImageView.setImageBitmap(bitmap)
-                    homeSnapshotImageView.isVisible = true
-                }
-                openNowPlaying()
-            }, Handler(Looper.getMainLooper()))
-        }.onFailure { openNowPlaying() }
     }
 
-    private fun openNowPlaying() {
-        isOpeningNowPlaying = false
+    /**
+     * Show the player above the main screen. The main screen stays alive below it, closing the
+     * player is instant.
+     */
+    fun openNowPlaying() {
+        if (isNowPlayingOpen) {
+            return
+        }
 
-        navController.navigate(
-            R.id.fragment_now_playing,
-            null,
-            NavOptions.Builder()
-                .setPopUpTo(R.id.fragment_now_playing, true)
-                .build(),
-        )
+        isNowPlayingOpen = true
+        isNowPlayingOpenFlow.value = true
+        nowPlayingBackCallback.isEnabled = true
+
+        nowPlayingContainer.animate().cancel()
+        nowPlayingContainer.translationY = nowPlayingContainer.height.toFloat()
+        nowPlayingContainer.isVisible = true
+
+        supportFragmentManager.beginTransaction()
+            .setReorderingAllowed(true)
+            .replace(R.id.nowPlayingContainer, NowPlayingFragment())
+            .commitNow()
+
+        nowPlayingContainer.animate()
+            .translationY(0f)
+            .setDuration(OPEN_ANIMATION_MS)
+            .setInterpolator(DecelerateInterpolator(1.6f))
+            .start()
+    }
+
+    /**
+     * Hide the player.
+     *
+     * @param animated Whether it slides down, it doesn't when it was already dragged away
+     */
+    fun closeNowPlaying(animated: Boolean = true) {
+        if (!isNowPlayingOpen) {
+            return
+        }
+
+        isNowPlayingOpen = false
+        isNowPlayingOpenFlow.value = false
+        nowPlayingBackCallback.isEnabled = false
+
+        val finish = {
+            supportFragmentManager.findFragmentById(R.id.nowPlayingContainer)?.let {
+                supportFragmentManager.beginTransaction()
+                    .setReorderingAllowed(true)
+                    .remove(it)
+                    .commitAllowingStateLoss()
+            }
+
+            nowPlayingContainer.isVisible = false
+            nowPlayingContainer.translationY = 0f
+        }
+
+        nowPlayingContainer.animate().cancel()
+        when (animated) {
+            true -> nowPlayingContainer.animate()
+                .translationY(nowPlayingContainer.height.toFloat())
+                .setDuration(CLOSE_ANIMATION_MS)
+                .setInterpolator(AccelerateInterpolator(1.4f))
+                .withEndAction(finish)
+                .start()
+
+            false -> finish()
+        }
     }
 
     companion object {
         private val LOG_TAG = MainActivity::class.simpleName!!
 
-        private const val HOME_SNAPSHOT_HIDE_DELAY_MS = 650L
-
-        /**
-         * Now playing related route IDs.
-         */
-        private val nowPlayingRelatedRouteIds = setOf(
-            R.id.lyricsFragment,
-            R.id.nowPlayingFragment,
-            R.id.queueFragment,
-        )
+        private const val OPEN_ANIMATION_MS = 340L
+        private const val CLOSE_ANIMATION_MS = 260L
 
         /**
          * Open now playing fragment.

@@ -89,6 +89,9 @@
     <string name="audio_information">Audio information</string>
     <string name="audio_effects">Audio effects</string>
     <string name="playback_speed">Playback speed</string>
+    <string name="lyrics_timing">Lyrics timing</string>
+    <string name="lyrics_timing_hint">Lyrics earlier (+) or later (−), in milliseconds</string>
+    <string name="lyrics_timing_format">%1$+d ms</string>
     <string name="playback_speed_format">%1$s×</string>
     <string name="playback_pitch_slider_description">Playback pitch</string>
     <string name="playback_pitch_unlock">Unlock pitch change</string>

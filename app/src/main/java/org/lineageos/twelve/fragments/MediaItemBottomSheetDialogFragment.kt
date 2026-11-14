@@ -60,6 +60,7 @@ class MediaItemBottomSheetDialogFragment : TwelveBottomSheetDialogFragment(
     private val openGenreListItem by getViewProperty<ListItem>(R.id.openGenreListItem)
     private val placeholderImageView by getViewProperty<ImageView>(R.id.placeholderImageView)
     private val equalizerListItem by getViewProperty<ListItem>(R.id.equalizerListItem)
+    private val lyricsTimingListItem by getViewProperty<ListItem>(R.id.lyricsTimingListItem)
     private val playbackSpeedListItem by getViewProperty<ListItem>(R.id.playbackSpeedListItem)
     private val visualizerListItem by getViewProperty<ListItem>(R.id.visualizerListItem)
     private val playNowListItem by getViewProperty<ListItem>(R.id.playNowListItem)
@@ -103,6 +104,7 @@ class MediaItemBottomSheetDialogFragment : TwelveBottomSheetDialogFragment(
 
         // The extra actions of the player live here
         listOf(
+            lyricsTimingListItem to ACTION_LYRICS_TIMING,
             playbackSpeedListItem to ACTION_PLAYBACK_SPEED,
             equalizerListItem to ACTION_EQUALIZER,
             visualizerListItem to ACTION_VISUALIZER,
@@ -110,7 +112,7 @@ class MediaItemBottomSheetDialogFragment : TwelveBottomSheetDialogFragment(
             listItem.isVisible = fromNowPlaying
             listItem.setOnClickListener {
                 // The player navigates from its own destination, leave the sheet first
-                val fragmentManager = parentFragmentManager
+                val fragmentManager = requireActivity().supportFragmentManager
                 findNavController().navigateUp()
 
                 fragmentManager.setFragmentResult(
@@ -369,6 +371,7 @@ class MediaItemBottomSheetDialogFragment : TwelveBottomSheetDialogFragment(
          */
         const val RESULT_PLAYER_ACTION = "media_item_bottom_sheet_player_action"
         const val RESULT_KEY_ACTION = "action"
+        const val ACTION_LYRICS_TIMING = "lyrics_timing"
         const val ACTION_PLAYBACK_SPEED = "playback_speed"
         const val ACTION_EQUALIZER = "equalizer"
         const val ACTION_VISUALIZER = "visualizer"

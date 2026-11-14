@@ -38,7 +38,8 @@ class SwipeToDismissLayout @JvmOverloads constructor(
      */
     var canStartDrag: (MotionEvent) -> Boolean = { true }
 
-    private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
+    // A little more than a tap needs, so that nothing but a deliberate swipe minimizes the player
+    private val touchSlop = (ViewConfiguration.get(context).scaledTouchSlop * 1.5f).toInt()
     private val minimumFlingVelocity = ViewConfiguration.get(context).scaledMinimumFlingVelocity
 
     private var downX = 0f
@@ -162,8 +163,10 @@ class SwipeToDismissLayout @JvmOverloads constructor(
     }
 
     private fun release(velocity: Float) {
+        // A flick needs some travel too, a twitch of the finger is not a dismissal
         val dismiss = translationY > height * DISMISS_FRACTION
-                || (velocity > FLING_VELOCITY && velocity > minimumFlingVelocity)
+                || (velocity > FLING_VELOCITY && velocity > minimumFlingVelocity
+                && translationY > height * FLING_MIN_FRACTION)
 
         val target = when (dismiss) {
             true -> height.toFloat()
@@ -213,6 +216,7 @@ class SwipeToDismissLayout @JvmOverloads constructor(
         private const val HORIZONTAL_TOLERANCE = 1.2f
         private const val DISMISS_FRACTION = 0.22f
         private const val FLING_VELOCITY = 1400f
+        private const val FLING_MIN_FRACTION = 0.1f
         private const val STIFFNESS = 200f
         private const val SETTLED_PX = 0.5f
         private const val SHRINK = 0.1f

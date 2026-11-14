@@ -91,6 +91,16 @@ var SharedPreferences.defaultProvider: ProviderIdentifier?
         )
     }
 
+const val LYRICS_OFFSET_MS_KEY = "lyrics_offset_ms"
+
+/**
+ * How much earlier than the playback position the lyrics are shown, in milliseconds. Negative
+ * values delay them.
+ */
+var SharedPreferences.lyricsOffsetMs: Int
+    get() = getInt(LYRICS_OFFSET_MS_KEY, 0)
+    set(value) = edit { putInt(LYRICS_OFFSET_MS_KEY, value) }
+
 const val AUTOPLAY_KEY = "autoplay"
 private const val AUTOPLAY_DEFAULT = true
 val SharedPreferences.autoplay: Boolean

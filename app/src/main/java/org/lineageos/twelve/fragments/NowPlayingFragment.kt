@@ -13,7 +13,6 @@ import android.media.audiofx.AudioEffect
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.SystemClock
 import android.view.Choreographer
 import android.util.Log
 import android.util.TypedValue
@@ -39,7 +38,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.common.Player
-import androidx.navigation.fragment.findNavController
+import androidx.navigation.Navigation
+import org.lineageos.twelve.MainActivity
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -52,7 +52,9 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.Chip
 import com.google.android.material.progressindicator.LinearProgressIndicator
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.slider.Slider
+import org.lineageos.twelve.ext.lyricsOffsetMs
 import com.google.android.material.transition.MaterialContainerTransform
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
@@ -179,12 +181,17 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
     }
     private var lyricsCurrentIndex: Int? = null
 
-    // Playback position is only read a few times a second, the lyrics need it every frame
-    private var lyricsAnchorPositionMs = 0L
-    private var lyricsAnchorUptimeMs = 0L
-    private var lyricsIsPlaying = false
-    private var lyricsSpeed = 1f
+    private val sharedPreferences by lazy {
+        PreferenceManager.getDefaultSharedPreferences(requireContext())
+    }
+
+    // The lyrics follow the player every frame, a few updates per second are not enough
     private var isLyricsFrameLoopRunning = false
+    private var lyricsLines: List<Lyrics.Line> = emptyList()
+
+    // Start times of the lines that carry the focus (background vocals don't)
+    private var lyricsFocusStarts = LongArray(0)
+    private var lyricsFocusIndices = IntArray(0)
 
     private val lyricsFrameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
@@ -192,13 +199,49 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
                 return
             }
 
-            val elapsed = when (lyricsIsPlaying) {
-                true -> ((SystemClock.uptimeMillis() - lyricsAnchorUptimeMs) * lyricsSpeed).toLong()
-                false -> 0L
+            viewModel.currentPositionMs()?.let { playerPositionMs ->
+                val positionMs = playerPositionMs + sharedPreferences.lyricsOffsetMs
+                lyricsAdapter.setPosition(positionMs)
+
+                val index = focusedLineAt(positionMs)
+                if (index != lyricsCurrentIndex) {
+                    lyricsCurrentIndex = index
+                    lyricsAdapter.submit(lyricsLines, index)
+                    centerCurrentLyricsLine(animate = true)
+                }
             }
-            lyricsAdapter.setPosition(lyricsAnchorPositionMs + elapsed)
 
             Choreographer.getInstance().postFrameCallback(this)
+        }
+    }
+
+    /**
+     * The line that is being sung or was sung last, -1 before the first one, null if the lyrics
+     * aren't synchronized.
+     */
+    private fun focusedLineAt(positionMs: Long): Int? {
+        if (lyricsFocusStarts.isEmpty()) {
+            return null
+        }
+
+        var low = 0
+        var high = lyricsFocusStarts.size - 1
+        var found = -1
+        while (low <= high) {
+            val middle = (low + high) ushr 1
+            when (lyricsFocusStarts[middle] <= positionMs) {
+                true -> {
+                    found = middle
+                    low = middle + 1
+                }
+
+                false -> high = middle - 1
+            }
+        }
+
+        return when (found) {
+            -1 -> -1
+            else -> lyricsFocusIndices[found]
         }
     }
 
@@ -215,10 +258,6 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         }
     }
 
-    private fun anchorLyricsPosition(positionMs: Long) {
-        lyricsAnchorPositionMs = positionMs
-        lyricsAnchorUptimeMs = SystemClock.uptimeMillis()
-    }
     private var lastCenteredLyricsIndex = -1
     private var isLyricsFollowing = true
     private val handler = Handler(Looper.getMainLooper())
@@ -374,19 +413,18 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
 
         // Top bar
         toolbar.setNavigationOnClickListener {
-            findNavController().navigateUp()
+            closePlayer()
         }
 
         statsMaterialCardView.setOnClickListener {
-            findNavController().navigateSafe(
-                R.id.action_nowPlayingFragment_to_fragment_now_playing_stats_dialog
-            )
+            navigateMain(R.id.fragment_now_playing_stats_bottom_sheet_dialog)
         }
 
         // Swipe down to minimize the player
         swipeToDismissLayout.canStartDrag = ::canStartDismissDrag
         swipeToDismissLayout.onDismissed = {
-            findNavController().navigateUp()
+            // Already out of the screen
+            (requireActivity() as MainActivity).closeNowPlaying(animated = false)
         }
 
         // Visualizer
@@ -450,9 +488,9 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         ) { _, result ->
             when (result.getString(MediaItemBottomSheetDialogFragment.RESULT_KEY_ACTION)) {
                 MediaItemBottomSheetDialogFragment.ACTION_PLAYBACK_SPEED ->
-                    findNavController().navigateSafe(
-                        R.id.action_nowPlayingFragment_to_fragment_playback_control_bottom_sheet_dialog
-                    )
+                    navigateMain(R.id.fragment_playback_control_bottom_sheet_dialog)
+
+                MediaItemBottomSheetDialogFragment.ACTION_LYRICS_TIMING -> showLyricsTimingDialog()
 
                 MediaItemBottomSheetDialogFragment.ACTION_EQUALIZER -> openEqualizer()
 
@@ -464,9 +502,7 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         // Bottom bar buttons
         queueMaterialButton.setOnClickListener {
             when (queueRecyclerView) {
-                null -> findNavController().navigateSafe(
-                    R.id.action_nowPlayingFragment_to_fragment_queue
-                )
+                null -> navigateMain(R.id.fragment_queue)
 
                 else -> setMode(
                     when (mode) {
@@ -843,31 +879,6 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
                 }
 
                 launch {
-                    viewModel.durationCurrentPositionMs.collect { (_, positionMs) ->
-                        positionMs?.let { anchorLyricsPosition(it) }
-                    }
-                }
-
-                launch {
-                    viewModel.isPlaying.collect {
-                        // Keep the position where it is while paused
-                        if (lyricsIsPlaying) {
-                            anchorLyricsPosition(
-                                lyricsAnchorPositionMs +
-                                        ((SystemClock.uptimeMillis() - lyricsAnchorUptimeMs) *
-                                                lyricsSpeed).toLong()
-                            )
-                        }
-                        lyricsIsPlaying = it
-                        anchorLyricsPosition(lyricsAnchorPositionMs)
-                    }
-                }
-
-                launch {
-                    viewModel.playbackParameters.collect { lyricsSpeed = it.speed }
-                }
-
-                launch {
                     viewModel.lyricsLines.collectLatest {
                         when (it) {
                             is FlowResult.Loading -> {
@@ -959,8 +970,8 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
 
     private fun openAudioOptions() {
         viewModel.audio.value.getOrNull()?.let {
-            findNavController().navigateSafe(
-                R.id.action_nowPlayingFragment_to_fragment_media_item_bottom_sheet_dialog,
+            navigateMain(
+                R.id.fragment_media_item_bottom_sheet_dialog,
                 MediaItemBottomSheetDialogFragment.createBundle(
                     it.uri,
                     fromNowPlaying = true,
@@ -983,7 +994,54 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
     }
 
     private fun showLyricsScreen() {
-        findNavController().navigateSafe(R.id.action_nowPlayingFragment_to_fragment_lyrics)
+        navigateMain(R.id.fragment_lyrics)
+    }
+
+    /**
+     * Lets the user nudge the lyrics when they don't match the audio.
+     */
+    private fun showLyricsTimingDialog() {
+        val context = requireContext()
+        val slider = Slider(context).apply {
+            valueFrom = LYRICS_OFFSET_MIN_MS
+            valueTo = LYRICS_OFFSET_MAX_MS
+            stepSize = LYRICS_OFFSET_STEP_MS
+            value = sharedPreferences.lyricsOffsetMs.toFloat()
+                .coerceIn(LYRICS_OFFSET_MIN_MS, LYRICS_OFFSET_MAX_MS)
+            setLabelFormatter { getString(R.string.lyrics_timing_format, it.toInt()) }
+        }
+
+        // Applied while the slider moves, to see the effect
+        slider.addOnChangeListener { _, value, _ ->
+            sharedPreferences.lyricsOffsetMs = value.toInt()
+        }
+
+        val padding = (24 * resources.displayMetrics.density).toInt()
+        val container = FrameLayout(context).apply {
+            setPadding(padding, padding / 2, padding, 0)
+            addView(slider)
+        }
+
+        MaterialAlertDialogBuilder(context)
+            .setTitle(R.string.lyrics_timing)
+            .setMessage(R.string.lyrics_timing_hint)
+            .setView(container)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    private fun closePlayer() {
+        (requireActivity() as MainActivity).closeNowPlaying()
+    }
+
+    /**
+     * The player is an overlay of the activity, what it opens belongs to the main navigation.
+     */
+    private fun navigateMain(destinationId: Int, args: Bundle? = null) {
+        runCatching {
+            Navigation.findNavController(requireActivity(), R.id.navHostFragment)
+                .navigate(destinationId, args)
+        }.onFailure { Log.e(LOG_TAG, "Cannot open destination", it) }
     }
 
     /**
@@ -1077,6 +1135,18 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         currentIndex: Int?,
     ) {
         this.hasLyrics = hasLyrics
+
+        if (lines != lyricsLines) {
+            lyricsLines = lines
+            val focusLines = lines.withIndex().filter { (_, line) ->
+                !line.isBackground && line.durationMs != null
+            }
+            lyricsFocusStarts = LongArray(focusLines.size) { focusLines[it].value.durationMs!!.first }
+            lyricsFocusIndices = IntArray(focusLines.size) { focusLines[it].index }
+        } else if (isLyricsFrameLoopRunning) {
+            // The frame loop knows better
+            return
+        }
 
         // Synchronized lyrics where no line started yet: nothing is in focus
         val focusIndex = currentIndex ?: when (lines.any { it.durationMs != null }) {
@@ -1226,6 +1296,10 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         private val LOG_TAG = NowPlayingFragment::class.simpleName!!
 
         private const val STATE_MODE = "mode"
+
+        private const val LYRICS_OFFSET_MIN_MS = -2000f
+        private const val LYRICS_OFFSET_MAX_MS = 2000f
+        private const val LYRICS_OFFSET_STEP_MS = 50f
 
         private const val LYRICS_PREVIEW_BLUR_RADIUS = 3f
         private const val MODE_TRANSITION_MS = 420L

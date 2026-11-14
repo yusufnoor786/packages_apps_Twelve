@@ -135,6 +135,14 @@
             app:leadingIconImage="@drawable/ic_playlist_add" />
 
         <org.lineageos.twelve.ui.views.ListItem
+            android:id="@+id/lyricsTimingListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:headlineText="@string/lyrics_timing"
+            app:leadingIconImage="@drawable/ic_sync" />
+
+        <org.lineageos.twelve.ui.views.ListItem
             android:id="@+id/playbackSpeedListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

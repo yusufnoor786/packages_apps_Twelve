@@ -12,15 +12,6 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
-    <!-- What the main screen looked like, shown behind the player while it is dragged away -->
-    <ImageView
-        android:id="@+id/homeSnapshotImageView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:importantForAccessibility="no"
-        android:scaleType="fitXY"
-        android:visibility="gone" />
-
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/navHostFragment"
         android:name="androidx.navigation.fragment.NavHostFragment"
@@ -28,6 +19,15 @@
         android:layout_height="match_parent"
         app:defaultNavHost="true"
         app:navGraph="@navigation/fragment_main" />
+
+    <!-- The player, above the main screen so that closing it doesn't rebuild what is below -->
+    <FrameLayout
+        android:id="@+id/nowPlayingContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone" />
 
     <org.lineageos.twelve.ui.views.NowPlayingBar
         android:id="@+id/nowPlayingBar"

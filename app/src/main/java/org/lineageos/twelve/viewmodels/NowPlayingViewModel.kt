@@ -96,6 +96,14 @@ open class NowPlayingViewModel(application: Application) : TwelveViewModel(appli
         UNKNOWN,
     }
 
+    /**
+     * The playback position right now, the controller keeps it up to date between the updates
+     * of the player. Main thread only.
+     */
+    fun currentPositionMs(): Long? = mediaController.value?.let { controller ->
+        controller.currentPosition.takeIf { controller.duration != C.TIME_UNSET }
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val mediaMetadata = mediaControllerFlow
         .flatMapLatest { it.mediaMetadataFlow(eventsFlow) }
