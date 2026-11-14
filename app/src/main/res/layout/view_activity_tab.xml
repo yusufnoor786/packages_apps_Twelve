@@ -28,9 +28,8 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="24dp"
             android:letterSpacing="-0.01"
-            android:textAppearance="?attr/textAppearanceHeadlineSmall"
+            android:textAppearance="?attr/textAppearanceHeadlineSmallEmphasized"
             android:textColor="?attr/colorOnSurface"
-            android:textStyle="bold"
             tools:text="Trending songs" />
 
         <androidx.recyclerview.widget.RecyclerView

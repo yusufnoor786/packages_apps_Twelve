@@ -48,9 +48,8 @@
         android:ellipsize="end"
         android:hyphenationFrequency="normal"
         android:maxLines="1"
-        android:textAppearance="?attr/textAppearanceTitleSmall"
+        android:textAppearance="?attr/textAppearanceTitleSmallEmphasized"
         android:textColor="?attr/colorOnSurface"
-        android:textStyle="bold"
         android:visibility="gone"
         tools:text="Headline"
         tools:visibility="visible" />

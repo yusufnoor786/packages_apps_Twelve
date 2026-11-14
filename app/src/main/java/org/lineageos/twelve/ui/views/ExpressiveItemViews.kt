@@ -13,6 +13,8 @@ import androidx.annotation.AttrRes
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
 import org.lineageos.twelve.R
+import org.lineageos.twelve.ui.expressive.ShapeMaskLayout
+import org.lineageos.twelve.ui.expressive.ExpressiveShape
 
 /**
  * An artist: a round avatar with the name below it.
@@ -21,7 +23,15 @@ class ArtistCircleItemView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     @AttrRes defStyleAttr: Int = com.google.android.material.R.attr.materialCardViewStyle,
-) : BaseMediaItemView(context, attrs, defStyleAttr, R.layout.artist_circle_item)
+) : BaseMediaItemView(context, attrs, defStyleAttr, R.layout.artist_circle_item) {
+    init {
+        setCardBackgroundColor(android.graphics.Color.TRANSPARENT)
+    }
+
+    fun setShape(shape: ExpressiveShape) {
+        findViewById<ShapeMaskLayout>(R.id.shapeMaskLayout).shape = shape
+    }
+}
 
 /**
  * A genre: a tile in one of the colors of the theme, the same genre always has the same one.
@@ -50,6 +60,7 @@ class GenreTileView @JvmOverloads constructor(
         setCardBackgroundColor(MaterialColors.getColor(this, container))
         val foreground = MaterialColors.getColor(this, onContainer)
         nameTextView.setTextColor(foreground)
+        iconImageView.setImageDrawable(ExpressiveShape.forKey(name).drawable())
         iconImageView.imageTintList = android.content.res.ColorStateList.valueOf(foreground)
     }
 

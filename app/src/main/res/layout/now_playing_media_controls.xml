@@ -51,13 +51,13 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/playPauseMaterialButton"
-            style="?attr/materialIconButtonStyle"
+            style="@style/Widget.Material3Expressive.Button.IconButton.Filled"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="8dp"
             app:icon="@drawable/ic_play_arrow"
-            app:iconSize="56dp"
-            app:iconTint="?attr/colorOnSurface"
-            app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Large" />
+            app:iconSize="40dp"
+            app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Large.Wide" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/nextTrackMaterialButton"

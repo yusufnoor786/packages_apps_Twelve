@@ -69,6 +69,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import me.bogerchan.niervisualizer.NierVisualizerManager
 import org.lineageos.twelve.R
+import org.lineageos.twelve.ui.expressive.morphForPlaying
 import org.lineageos.twelve.ext.AUTOPLAY_KEY
 import org.lineageos.twelve.ext.applyBackdropEffects
 import org.lineageos.twelve.ext.autoplay
@@ -734,6 +735,7 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
                                 false -> R.drawable.ic_play_arrow
                             }
                         )
+                        playPauseMaterialButton.morphForPlaying(isPlaying)
                     }
                 }
 

@@ -5,18 +5,25 @@
 
 package org.lineageos.twelve.ui.views
 
+import android.animation.ValueAnimator
 import android.content.Context
+import android.graphics.Color
 import android.graphics.drawable.AnimatedVectorDrawable
 import android.util.AttributeSet
+import android.view.View
+import android.view.animation.LinearInterpolator
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.annotation.AttrRes
+import androidx.core.graphics.ColorUtils
 import androidx.media3.common.MediaMetadata
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import org.lineageos.twelve.R
+import org.lineageos.twelve.ext.applyBackdropEffects
+import org.lineageos.twelve.ui.expressive.morphForPlaying
 import org.lineageos.twelve.ext.loadThumbnail
 import org.lineageos.twelve.models.Thumbnail
 import kotlin.reflect.safeCast
@@ -34,21 +41,32 @@ class NowPlayingBar @JvmOverloads constructor(
     private val nextMaterialButton by lazy { findViewById<MaterialButton>(R.id.nextMaterialButton) }
     private val playPauseMaterialButton by lazy { findViewById<MaterialButton>(R.id.playPauseMaterialButton) }
     private val thumbnailImageView by lazy { findViewById<ImageView>(R.id.thumbnailImageView) }
+    private val thumbnailMaskLayout by lazy { findViewById<View>(R.id.thumbnailMaskLayout) }
+    private val backdropImageView by lazy { findViewById<ImageView>(R.id.backdropImageView) }
+
+    // The shaped cover turns slowly while the music plays, like a record
+    private var spinAnimator: ValueAnimator? = null
     private val titleTextView by lazy { findViewById<TextView>(R.id.titleTextView) }
 
     init {
+        // Dark, tinted with the accent: shown until the cover is there and behind it
         setCardBackgroundColor(
-            MaterialColors.getColorStateList(
-                context,
-                com.google.android.material.R.attr.colorSurfaceContainerHigh,
-                cardBackgroundColor,
+            ColorUtils.blendARGB(
+                MaterialColors.getColor(
+                    context, androidx.appcompat.R.attr.colorPrimary, Color.DKGRAY
+                ),
+                Color.BLACK,
+                0.72f,
             )
         )
         radius = resources.getDimension(R.dimen.now_playing_bar_corner_radius)
         cardElevation = resources.getDimension(R.dimen.now_playing_bar_elevation)
-        strokeWidth = 0
+        strokeWidth = resources.displayMetrics.density.toInt().coerceAtLeast(1)
+        strokeColor = ColorUtils.setAlphaComponent(Color.WHITE, 0x29)
 
         inflate(context, R.layout.now_playing_bar, this)
+
+        backdropImageView.applyBackdropEffects()
 
         circularProgressIndicator.min = 0
     }
@@ -66,6 +84,29 @@ class NowPlayingBar @JvmOverloads constructor(
             }
         )
         AnimatedVectorDrawable::class.safeCast(playPauseMaterialButton.icon)?.start()
+        playPauseMaterialButton.morphForPlaying(isPlaying)
+
+        when (isPlaying) {
+            true -> spinAnimator?.takeIf { it.isStarted }?.resume() ?: run {
+                spinAnimator = ValueAnimator.ofFloat(0f, 360f).apply {
+                    duration = SPIN_DURATION_MS
+                    repeatCount = ValueAnimator.INFINITE
+                    interpolator = LinearInterpolator()
+                    addUpdateListener {
+                        thumbnailMaskLayout.rotation = it.animatedValue as Float
+                    }
+                    start()
+                }
+            }
+
+            false -> spinAnimator?.pause()
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        spinAnimator?.cancel()
+        spinAnimator = null
+        super.onDetachedFromWindow()
     }
 
     fun updateMediaMetadata(mediaMetadata: MediaMetadata) {
@@ -85,6 +126,7 @@ class NowPlayingBar @JvmOverloads constructor(
 
     fun updateMediaArtwork(artwork: Thumbnail?) {
         thumbnailImageView.loadThumbnail(artwork, placeholder = R.drawable.ic_music_note)
+        backdropImageView.loadThumbnail(artwork)
     }
 
     fun updateDurationCurrentPositionMs(durationMs: Long?, currentPositionMs: Long?) {
@@ -93,5 +135,9 @@ class NowPlayingBar @JvmOverloads constructor(
 
         circularProgressIndicator.max = durationSecs
         circularProgressIndicator.setProgressCompat(currentPositionSecs, true)
+    }
+
+    private companion object {
+        private const val SPIN_DURATION_MS = 18_000L
     }
 }

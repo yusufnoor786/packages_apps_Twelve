@@ -4,10 +4,10 @@
      SPDX-License-Identifier: Apache-2.0
 -->
 <resources>
-    <dimen name="now_playing_bar_height">64dp</dimen>
+    <dimen name="now_playing_bar_height">68dp</dimen>
     <dimen name="now_playing_bar_margin_horizontal">12dp</dimen>
     <dimen name="now_playing_bar_margin_vertical">8dp</dimen>
-    <dimen name="now_playing_bar_corner_radius">28dp</dimen>
-    <dimen name="now_playing_bar_elevation">6dp</dimen>
+    <dimen name="now_playing_bar_corner_radius">34dp</dimen>
+    <dimen name="now_playing_bar_elevation">10dp</dimen>
     <dimen name="queue_item_padding">16dp</dimen>
 </resources>

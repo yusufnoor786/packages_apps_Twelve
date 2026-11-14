@@ -9,59 +9,50 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <HorizontalScrollView
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/menuToggleGroup"
+        style="@style/Widget.Material3Expressive.MaterialButtonGroup.Connected"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:clipToPadding="false"
-        android:paddingHorizontal="16dp"
-        android:paddingTop="14dp"
-        android:paddingBottom="6dp"
-        android:scrollbars="none">
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="14dp"
+        android:layout_marginBottom="6dp"
+        app:selectionRequired="true"
+        app:singleSelection="true">
 
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/chipGroup"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:chipSpacingHorizontal="10dp"
-            app:selectionRequired="true"
-            app:singleLine="true"
-            app:singleSelection="true">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/albumsButton"
+                style="@style/Widget.Twelve.ConnectedButton"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:text="@string/library_fragment_menu_albums" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/albumsChip"
-                style="@style/Widget.Twelve.LibraryChip"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/library_fragment_menu_albums"
-                app:chipIcon="@drawable/ic_album" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/artistsButton"
+                style="@style/Widget.Twelve.ConnectedButton"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:text="@string/library_fragment_menu_artists" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/artistsChip"
-                style="@style/Widget.Twelve.LibraryChip"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/library_fragment_menu_artists"
-                app:chipIcon="@drawable/ic_person" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/genresButton"
+                style="@style/Widget.Twelve.ConnectedButton"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:text="@string/library_fragment_menu_genres" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/genresChip"
-                style="@style/Widget.Twelve.LibraryChip"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/library_fragment_menu_genres"
-                app:chipIcon="@drawable/ic_genres" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/playlistsButton"
+                style="@style/Widget.Twelve.ConnectedButton"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:text="@string/library_fragment_menu_playlists" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/playlistsChip"
-                style="@style/Widget.Twelve.LibraryChip"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/library_fragment_menu_playlists"
-                app:chipIcon="@drawable/ic_playlist_play" />
-
-        </com.google.android.material.chip.ChipGroup>
-
-    </HorizontalScrollView>
+    </com.google.android.material.button.MaterialButtonToggleGroup>
 
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/viewPager2"

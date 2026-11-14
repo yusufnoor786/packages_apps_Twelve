@@ -18,6 +18,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
 import org.lineageos.twelve.R
+import org.lineageos.twelve.ui.expressive.HeroCarousel
+import org.lineageos.twelve.ui.expressive.ExpressiveShape
 import org.lineageos.twelve.models.ActivityTab
 import org.lineageos.twelve.models.Album
 import org.lineageos.twelve.models.Artist
@@ -47,6 +49,15 @@ class ActivityTabView(context: Context) : FrameLayout(context) {
 
     private val density = resources.displayMetrics.density
 
+    // The big covers on top of the page scroll as an expressive carousel
+    private val heroCarousel by lazy {
+        HeroCarousel(
+            recyclerView,
+            intArrayOf(R.id.thumbnailImageView, R.id.placeholderImageView),
+            intArrayOf(R.id.heroTextLayout),
+        )
+    }
+
     // RecyclerView
     private val adapters = mutableMapOf<Style, SimpleListAdapter<MediaItem<*>, BaseMediaItemView>>()
     private var currentStyle: Style? = null
@@ -75,7 +86,7 @@ class ActivityTabView(context: Context) : FrameLayout(context) {
             override fun ViewHolder.onPrepareView() {
                 view.layoutParams = when (style) {
                     Style.HERO -> RecyclerView.LayoutParams(
-                        (HERO_WIDTH_DP * density).toInt(),
+                        heroCarousel.itemWidth(),
                         ViewGroup.LayoutParams.MATCH_PARENT,
                     )
 
@@ -107,6 +118,16 @@ class ActivityTabView(context: Context) : FrameLayout(context) {
 
             override fun ViewHolder.onBindView(item: MediaItem<*>) {
                 (view as BaseMediaItemView).setItem(item)
+                when (view) {
+                    // Faces get a playful shape, covers that carry their own text a calm one
+                    is RoundMediaItemView -> view.setShape(
+                        when (item) {
+                            is Artist -> ExpressiveShape.avatarFor(item.uri)
+                            else -> ExpressiveShape.SQUARE
+                        }
+                    )
+                    is TileMediaItemView -> view.setShape(ExpressiveShape.forKey(item.uri))
+                }
             }
         }
     }
@@ -183,13 +204,18 @@ class ActivityTabView(context: Context) : FrameLayout(context) {
         recyclerView.layoutManager = when (style) {
             Style.TILES -> GridLayoutManager(context, 2, RecyclerView.HORIZONTAL, false)
             else -> LinearLayoutManager(context, RecyclerView.HORIZONTAL, false)
-        }
+        }.also { it.initialPrefetchItemCount = PREFETCH_ITEMS }
         recyclerView.adapter = adapterFor(style)
+
+        when (style) {
+            Style.HERO -> heroCarousel.attach()
+            else -> heroCarousel.detach()
+        }
     }
 
     companion object {
-        private const val HERO_WIDTH_DP = 276
         private const val HERO_HEIGHT_DP = 344
+        private const val PREFETCH_ITEMS = 4
         private const val TILE_WIDTH_DP = 280
         private const val TILE_HEIGHT_DP = 84
 

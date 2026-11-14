@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <declare-styleable name="ShapeMaskLayout">
+        <attr name="maskShape" format="enum">
+            <enum name="circle" value="0" />
+            <enum name="square" value="1" />
+            <enum name="arch" value="3" />
+            <enum name="pill" value="8" />
+            <enum name="gem" value="13" />
+            <enum name="sunny" value="14" />
+            <enum name="cookie_4" value="16" />
+            <enum name="cookie_6" value="17" />
+            <enum name="cookie_7" value="18" />
+            <enum name="cookie_9" value="19" />
+            <enum name="cookie_12" value="20" />
+            <enum name="clover_4" value="22" />
+            <enum name="clover_8" value="23" />
+            <enum name="soft_burst" value="25" />
+            <enum name="soft_boom" value="27" />
+            <enum name="flower" value="28" />
+            <enum name="puffy" value="29" />
+        </attr>
+        <!-- -1: no morph when pressed -->
+        <attr name="pressedShape" format="enum">
+            <enum name="none" value="-1" />
+            <enum name="circle" value="0" />
+            <enum name="square" value="1" />
+            <enum name="cookie_12" value="20" />
+            <enum name="sunny" value="14" />
+        </attr>
+    </declare-styleable>
+</resources>

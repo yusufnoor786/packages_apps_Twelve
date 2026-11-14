@@ -8,38 +8,198 @@
     android:id="@+id/searchView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:hint="@string/search_hint">
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/searchRecyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-        app:spanCount="1" />
+    android:hint="@string/search_hint"
+    app:backgroundTint="?attr/colorSurface">
 
     <LinearLayout
-        android:id="@+id/searchNoElementsLinearLayout"
-        style="@style/Theme.Twelve.NoElements.LinearLayout"
-        android:layout_gravity="center"
-        android:visibility="gone">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <ImageView
-            style="@style/Theme.Twelve.NoElements.ImageView"
-            android:contentDescription="@string/no_results"
-            android:src="@drawable/ic_search_off" />
+        <!-- What to look for -->
+        <HorizontalScrollView
+            android:id="@+id/searchFilterScrollView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="8dp"
+            android:scrollbars="none"
+            android:visibility="gone">
 
-        <Space style="@style/Theme.Twelve.NoElements.Space" />
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/searchFilterToggleGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:checkedButton="@+id/searchFilterAllButton"
+                app:selectionRequired="true"
+                app:singleSelection="true">
 
-        <TextView
-            style="@style/Theme.Twelve.NoElements.TextView"
-            android:text="@string/no_results" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/searchFilterAllButton"
+                    style="@style/Widget.Twelve.SearchFilterButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="@string/search_filter_all" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/searchFilterSongsButton"
+                    style="@style/Widget.Twelve.SearchFilterButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="@string/search_filter_songs" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/searchFilterAlbumsButton"
+                    style="@style/Widget.Twelve.SearchFilterButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="@string/library_fragment_menu_albums" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/searchFilterArtistsButton"
+                    style="@style/Widget.Twelve.SearchFilterButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="@string/library_fragment_menu_artists" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/searchFilterPlaylistsButton"
+                    style="@style/Widget.Twelve.SearchFilterButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="@string/library_fragment_menu_playlists" />
+
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        </HorizontalScrollView>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/searchRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+                app:spanCount="1" />
+
+            <!-- Before typing -->
+            <LinearLayout
+                android:id="@+id/searchStartLinearLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="32dp"
+                android:paddingBottom="64dp">
+
+                <FrameLayout
+                    android:layout_width="132dp"
+                    android:layout_height="132dp">
+
+                    <ImageView
+                        android:id="@+id/searchStartShapeImageView"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:importantForAccessibility="no" />
+
+                    <ImageView
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:layout_gravity="center"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_search"
+                        app:tint="?attr/colorOnPrimaryContainer" />
+
+                </FrameLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:gravity="center"
+                    android:text="@string/search_start_title"
+                    android:textAppearance="?attr/textAppearanceHeadlineSmallEmphasized"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:text="@string/search_start_summary"
+                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+            </LinearLayout>
+
+            <!-- Nothing found -->
+            <LinearLayout
+                android:id="@+id/searchNoElementsLinearLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="32dp"
+                android:paddingBottom="64dp"
+                android:visibility="gone">
+
+                <FrameLayout
+                    android:layout_width="112dp"
+                    android:layout_height="112dp">
+
+                    <ImageView
+                        android:id="@+id/searchNoElementsShapeImageView"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:importantForAccessibility="no" />
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@string/no_results"
+                        android:src="@drawable/ic_search_off"
+                        app:tint="?attr/colorOnTertiaryContainer" />
+
+                </FrameLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:gravity="center"
+                    android:text="@string/no_results"
+                    android:textAppearance="?attr/textAppearanceTitleLargeEmphasized"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:text="@string/search_no_results_summary"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+            </LinearLayout>
+
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/searchLinearProgressIndicator"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:indeterminate="true" />
+
+        </FrameLayout>
 
     </LinearLayout>
-
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/searchLinearProgressIndicator"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:indeterminate="true" />
 
 </com.google.android.material.search.SearchView>

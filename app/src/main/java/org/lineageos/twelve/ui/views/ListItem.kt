@@ -47,6 +47,10 @@ class ListItem @JvmOverloads constructor(
     private val supportingTextView by lazy { findViewById<TextView>(R.id.supportingTextView) }
     private val trailingIconImageView by lazy { findViewById<ImageView>(R.id.trailingIconImageView) }
     private val trailingSupportingTextView by lazy { findViewById<TextView>(R.id.trailingSupportingTextView) }
+
+    // Colors of the text and icon on a plain row, a highlighted row uses its container's
+    private val defaultHeadlineColors by lazy { headlineTextView.textColors }
+    private val defaultLeadingIconTint by lazy { leadingIconImageView.imageTintList }
     private val trailingViewContainerFrameLayout by lazy { findViewById<FrameLayout>(R.id.trailingViewContainerFrameLayout) }
 
     private var cardCornerRadius: Float = 0f
@@ -236,6 +240,74 @@ class ListItem @JvmOverloads constructor(
     }
 
     /**
+     * Make the item one row of a connected group, the Material 3 Expressive list: the group has
+     * big round corners on the outside and small ones between its rows, which stand 2dp apart.
+     *
+     * @param index Position of the row in its group
+     * @param count Number of rows in the group
+     */
+    fun setGroupPosition(index: Int, count: Int, highlighted: Boolean = false) {
+        val density = resources.displayMetrics.density
+        val outer = OUTER_CORNER_DP * density
+        val inner = INNER_CORNER_DP * density
+        val isFirst = index <= 0
+        val isLast = index >= count - 1
+
+        cardElevation = 0f
+        strokeWidth = 0
+        shapeAppearanceModel = com.google.android.material.shape.ShapeAppearanceModel.builder()
+            .setTopLeftCornerSize(if (isFirst) outer else inner)
+            .setTopRightCornerSize(if (isFirst) outer else inner)
+            .setBottomLeftCornerSize(if (isLast) outer else inner)
+            .setBottomRightCornerSize(if (isLast) outer else inner)
+            .build()
+        setCardBackgroundColor(
+            com.google.android.material.color.MaterialColors.getColor(
+                this,
+                when (highlighted) {
+                    true -> com.google.android.material.R.attr.colorPrimaryContainer
+                    false -> com.google.android.material.R.attr.colorSurfaceContainerHigh
+                }
+            )
+        )
+        val headlineColors = defaultHeadlineColors
+        val leadingIconTint = defaultLeadingIconTint
+        when (highlighted) {
+            true -> {
+                val onContainer = android.content.res.ColorStateList.valueOf(
+                    com.google.android.material.color.MaterialColors.getColor(
+                        this, com.google.android.material.R.attr.colorOnPrimaryContainer
+                    )
+                )
+                headlineTextView.setTextColor(onContainer)
+                leadingIconImageView.imageTintList = onContainer
+            }
+
+            false -> {
+                headlineTextView.setTextColor(headlineColors)
+                leadingIconImageView.imageTintList = leadingIconTint
+            }
+        }
+
+        val sides = (16 * density).toInt()
+        val gap = (1 * density).toInt()
+        // A row of a list or of a plain layout, the parent's own kind of params are kept
+        layoutParams = ((layoutParams as? android.view.ViewGroup.MarginLayoutParams)
+            ?: androidx.recyclerview.widget.RecyclerView.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            )).also {
+            it.width = android.view.ViewGroup.LayoutParams.MATCH_PARENT
+            it.setMargins(
+                sides,
+                if (isFirst) (8 * density).toInt() else gap,
+                sides,
+                if (isLast) (8 * density).toInt() else gap,
+            )
+        }
+    }
+
+    /**
      * Show the cover of an item in place of the leading icon, in a rounded square.
      *
      * @param placeholder Shown while the cover loads and when there is none
@@ -397,6 +469,8 @@ class ListItem @JvmOverloads constructor(
         setTextAndUpdateVisibility(resources.getString(resId, *formatArgs))
 
     private companion object {
+        private const val OUTER_CORNER_DP = 28f
+        private const val INNER_CORNER_DP = 6f
         private const val COVER_SIZE_DP = 52
         private const val COVER_RADIUS_DP = 12f
     }

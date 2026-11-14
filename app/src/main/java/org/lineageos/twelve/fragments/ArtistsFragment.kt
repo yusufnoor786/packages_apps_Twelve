@@ -24,6 +24,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.lineageos.twelve.R
+import org.lineageos.twelve.ui.expressive.ExpressiveShape
 import org.lineageos.twelve.ext.getViewProperty
 import org.lineageos.twelve.ext.navigateSafe
 import org.lineageos.twelve.ext.setProgressCompat
@@ -63,6 +64,7 @@ class ArtistsFragment : Fragment(R.layout.fragment_artists) {
         ) {
             override fun ViewHolder.onBindView(item: Artist) {
                 view.setItem(item)
+                view.setShape(ExpressiveShape.avatarFor(item.name ?: item.uri))
 
                 view.setOnClickListener {
                     findNavController().navigateSafe(

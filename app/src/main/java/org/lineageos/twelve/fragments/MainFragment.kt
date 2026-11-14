@@ -6,9 +6,11 @@
 package org.lineageos.twelve.fragments
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
@@ -34,6 +36,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.color.MaterialColors
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.progressindicator.LinearProgressIndicator
@@ -42,6 +45,7 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.lineageos.twelve.R
+import org.lineageos.twelve.ui.expressive.ExpressiveShape
 import org.lineageos.twelve.SettingsActivity
 import org.lineageos.twelve.ext.getViewProperty
 import org.lineageos.twelve.ext.isLandscape
@@ -79,12 +83,21 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     private val refreshMaterialButton by getViewProperty<MaterialButton>(R.id.refreshMaterialButton)
     private val importMaterialButton by getViewProperty<MaterialButton>(R.id.importMaterialButton)
     private val greetingTextView by getViewProperty<TextView>(R.id.greetingTextView)
+    private val brandShapeImageView by getViewProperty<ImageView>(R.id.brandShapeImageView)
 
     private val playlistImporter = PlaylistImporter(this) { viewModel }
     private val searchLinearProgressIndicator by getViewProperty<LinearProgressIndicator>(R.id.searchLinearProgressIndicator)
     private val searchNoElementsLinearLayout by getViewProperty<LinearLayout>(R.id.searchNoElementsLinearLayout)
     private val searchRecyclerView by getViewProperty<RecyclerView>(R.id.searchRecyclerView)
     private val searchView by getViewProperty<SearchView>(R.id.searchView)
+    private val searchFilterScrollView by getViewProperty<View>(R.id.searchFilterScrollView)
+    private val searchFilterToggleGroup by getViewProperty<MaterialButtonToggleGroup>(R.id.searchFilterToggleGroup)
+    private val searchStartLinearLayout by getViewProperty<LinearLayout>(R.id.searchStartLinearLayout)
+    private val searchStartShapeImageView by getViewProperty<ImageView>(R.id.searchStartShapeImageView)
+    private val searchNoElementsShapeImageView by getViewProperty<ImageView>(R.id.searchNoElementsShapeImageView)
+
+    // Search results as they came, before the filter
+    private var searchResults: List<MediaItem<*>> = listOf()
     private val settingsMaterialButton by getViewProperty<MaterialButton>(R.id.settingsMaterialButton)
     private val toolbar by getViewProperty<MaterialToolbar>(R.id.toolbar)
     private val viewPager2 by getViewProperty<ViewPager2>(R.id.viewPager2)
@@ -102,6 +115,8 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             searchDiffCallback,
             ::ListItem
         ) {
+            override val groupedRows = true
+
             override fun ViewHolder.onBindView(item: MediaItem<*>) {
                 view.setOnLongClickListener {
                     findNavController().navigateSafe(
@@ -110,6 +125,8 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                     )
                     true
                 }
+
+                view.setGroupPosition(bindingAdapterPosition, itemCount)
 
                 when (item) {
                     is Album -> {
@@ -120,9 +137,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                             )
                         }
 
-                        view.setExpressiveCard()
                         view.setLeadingCover(item.thumbnail, R.drawable.ic_album)
-                        view.setTrailingIconImage(R.drawable.ic_album)
                         view.headlineText = item.title
                         view.supportingText = item.artistName
                     }
@@ -135,9 +150,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                             )
                         }
 
-                        view.setExpressiveCard()
                         view.setLeadingCover(item.thumbnail, R.drawable.ic_person)
-                        view.setTrailingIconImage(R.drawable.ic_person)
                         view.headlineText = item.name
                         view.supportingText = null
                     }
@@ -150,9 +163,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                             )
                         }
 
-                        view.setExpressiveCard()
                         view.setLeadingCover(item.thumbnail, R.drawable.ic_music_note)
-                        view.setTrailingIconImage(R.drawable.ic_music_note)
                         view.headlineText = item.title
                         view.supportingText = item.artistName
                     }
@@ -165,7 +176,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                             )
                         }
 
-                        view.setTrailingIconImage(R.drawable.ic_genres)
+                        view.setLeadingCover(null, R.drawable.ic_genres)
                         view.headlineText = item.name
                         view.supportingText = null
                     }
@@ -178,9 +189,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                             )
                         }
 
-                        view.setExpressiveCard()
                         view.setLeadingCover(item.thumbnail, R.drawable.ic_playlist_play)
-                        view.setTrailingIconImage(R.drawable.ic_playlist_play)
                         view.headlineText = item.name
                         view.supportingText = null
                     }
@@ -191,6 +200,14 @@ class MainFragment : Fragment(R.layout.fragment_main) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // The mark of the app, a note in a Material shape
+        brandShapeImageView.setImageDrawable(ExpressiveShape.COOKIE_9.drawable())
+        brandShapeImageView.imageTintList = ColorStateList.valueOf(
+            MaterialColors.getColor(
+                brandShapeImageView, com.google.android.material.R.attr.colorPrimaryContainer
+            )
+        )
 
         playRandomSongsButtonBottomMargin =
             (playRandomSongsButton.layoutParams as? ViewGroup.MarginLayoutParams)
@@ -430,6 +447,39 @@ class MainFragment : Fragment(R.layout.fragment_main) {
 
         searchView.editText.addTextChangedListener { text ->
             viewModel.setSearchQuery(text.toString())
+            showSearchResults()
+        }
+
+        // Search, the expressive way: a shape greets, filters pick the kind of result
+        searchView.findViewById<View>(
+            com.google.android.material.R.id.open_search_view_divider
+        )?.isVisible = false
+        // A plain surface, so the rows and the filters stand out on it
+        val searchSurface = MaterialColors.getColor(
+            searchView, com.google.android.material.R.attr.colorSurface
+        )
+        listOf(
+            com.google.android.material.R.id.open_search_view_background,
+            com.google.android.material.R.id.open_search_view_status_bar_spacer,
+        ).forEach { searchView.findViewById<View>(it)?.setBackgroundColor(searchSurface) }
+        searchStartShapeImageView.setImageDrawable(ExpressiveShape.COOKIE_12.drawable())
+        searchStartShapeImageView.imageTintList = ColorStateList.valueOf(
+            MaterialColors.getColor(
+                searchStartShapeImageView, com.google.android.material.R.attr.colorPrimaryContainer
+            )
+        )
+        searchNoElementsShapeImageView.setImageDrawable(ExpressiveShape.SOFT_BURST.drawable())
+        searchNoElementsShapeImageView.imageTintList = ColorStateList.valueOf(
+            MaterialColors.getColor(
+                searchNoElementsShapeImageView,
+                com.google.android.material.R.attr.colorTertiaryContainer,
+            )
+        )
+        searchFilterToggleGroup.addOnButtonCheckedListener { _, _, isChecked ->
+            if (isChecked) {
+                showSearchResults()
+                searchRecyclerView.scrollToPosition(0)
+            }
         }
         searchView.editText.setOnEditorActionListener { _, _, _ ->
             inputMethodManager.scheduleHideSoftInput(searchView.editText, 0)
@@ -480,12 +530,8 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                             }
 
                             is FlowResult.Success -> {
-                                searchAdapter.submitList(it.data)
-
-                                val isEmpty = it.data.isEmpty()
-                                searchRecyclerView.isVisible = !isEmpty
-                                searchNoElementsLinearLayout.isVisible =
-                                    isEmpty && searchView.editText.text.isNotEmpty()
+                                searchResults = it.data
+                                showSearchResults()
                             }
 
                             is FlowResult.Failure -> {
@@ -495,16 +541,37 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                                     it.throwable
                                 )
 
-                                searchAdapter.submitList(listOf())
-
-                                searchRecyclerView.isVisible = false
-                                searchNoElementsLinearLayout.isVisible = true
+                                searchResults = listOf()
+                                showSearchResults()
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Show the search results of the chosen kind, or what fits when there are none.
+     */
+    private fun showSearchResults() {
+        val hasQuery = searchView.editText.text.isNotEmpty()
+        val results = searchResults.takeIf { hasQuery } ?: listOf()
+        val filtered = when (searchFilterToggleGroup.checkedButtonId) {
+            R.id.searchFilterSongsButton -> results.filterIsInstance<Audio>()
+            R.id.searchFilterAlbumsButton -> results.filterIsInstance<Album>()
+            R.id.searchFilterArtistsButton -> results.filterIsInstance<Artist>()
+            R.id.searchFilterPlaylistsButton -> results.filterIsInstance<Playlist>()
+            else -> results
+        }
+
+        searchAdapter.submitList(filtered)
+
+        searchStartLinearLayout.isVisible = !hasQuery
+        searchFilterScrollView.isVisible = hasQuery && results.isNotEmpty()
+        searchRecyclerView.isVisible = filtered.isNotEmpty()
+        searchNoElementsLinearLayout.isVisible = hasQuery && filtered.isEmpty() &&
+                viewModel.searchResults.value !is FlowResult.Loading
     }
 
     override fun onDestroyView() {

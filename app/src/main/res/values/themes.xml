@@ -171,8 +171,7 @@
         <item name="iconGravity">textStart</item>
     </style>
 
-    <style name="TextAppearance.Twelve.HeaderTitle" parent="TextAppearance.Material3.DisplayMedium">
-        <item name="android:textStyle">bold</item>
+    <style name="TextAppearance.Twelve.HeaderTitle" parent="TextAppearance.Material3.HeadlineLarge.Emphasized">
         <item name="android:letterSpacing">-0.02</item>
     </style>
 
@@ -191,6 +190,29 @@
         <item name="android:textColor">@color/library_chip_foreground</item>
         <item name="chipIconTint">@color/library_chip_foreground</item>
         <item name="rippleColor">?attr/colorPrimary</item>
+    </style>
+
+    <!-- A button of a connected group: the chosen one fills with the accent color and becomes a pill -->
+    <style name="Widget.Twelve.ConnectedButton" parent="Widget.Material3Expressive.Button.TonalButton">
+        <item name="android:checkable">true</item>
+        <item name="android:textAppearance">?attr/textAppearanceLabelLargeEmphasized</item>
+        <item name="backgroundTint">@color/mode_toggle_background</item>
+        <item name="android:textColor">@color/mode_toggle_foreground</item>
+        <item name="iconTint">@color/mode_toggle_foreground</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+    </style>
+
+    <!-- A search filter: a pill that fills with the accent color when chosen -->
+    <style name="Widget.Twelve.SearchFilterButton" parent="Widget.Material3Expressive.Button.TonalButton">
+        <item name="android:checkable">true</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">18dp</item>
+        <item name="android:paddingEnd">18dp</item>
+        <item name="android:textAppearance">?attr/textAppearanceLabelLargeEmphasized</item>
+        <item name="backgroundTint">@color/mode_toggle_background</item>
+        <item name="android:textColor">@color/mode_toggle_foreground</item>
     </style>
 
     <!-- App widget -->

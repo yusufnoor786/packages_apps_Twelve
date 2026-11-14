@@ -10,6 +10,8 @@ import android.graphics.Color
 import android.util.AttributeSet
 import com.google.android.material.color.MaterialColors
 import org.lineageos.twelve.R
+import org.lineageos.twelve.ui.expressive.ShapeMaskLayout
+import org.lineageos.twelve.ui.expressive.ExpressiveShape
 
 /**
  * A square cover with big rounded corners, the text below it. Lives on a colored container.
@@ -43,6 +45,10 @@ class RoundMediaItemView @JvmOverloads constructor(
     init {
         setCardBackgroundColor(Color.TRANSPARENT)
     }
+
+    fun setShape(shape: ExpressiveShape) {
+        findViewById<ShapeMaskLayout>(R.id.shapeMaskLayout).shape = shape
+    }
 }
 
 /**
@@ -57,6 +63,10 @@ class TileMediaItemView @JvmOverloads constructor(
     com.google.android.material.R.attr.materialCardViewStyle,
     R.layout.tile_media_item_view,
 ) {
+    fun setShape(shape: ExpressiveShape) {
+        findViewById<ShapeMaskLayout>(R.id.shapeMaskLayout).shape = shape
+    }
+
     init {
         radius = 28 * resources.displayMetrics.density
         setCardBackgroundColor(

@@ -62,7 +62,10 @@ class AddOrRemoveFromPlaylistsFragment : Fragment(R.layout.fragment_add_or_remov
             diffCallback,
             ::ListItem,
         ) {
+            override val groupedRows = true
+
             override fun ViewHolder.onBindView(item: Pair<Playlist, Boolean>) {
+                view.setGroupPosition(bindingAdapterPosition, itemCount)
                 when (item === addNewPlaylistItem) {
                     true -> {
                         view.setOnClickListener {

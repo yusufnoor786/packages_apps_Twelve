@@ -41,6 +41,11 @@
     <string name="no_playlists">No playlists</string>
     <string name="no_audios">No audios</string>
     <string name="no_results">No results</string>
+    <string name="search_start_title">Find your music</string>
+    <string name="search_start_summary">Songs, albums, artists and playlists</string>
+    <string name="search_filter_all">All</string>
+    <string name="search_filter_songs">Songs</string>
+    <string name="search_no_results_summary">Try other words or another filter</string>
     <string name="shrug" translatable="false">¯\\_(ツ)_/¯</string>
 
     <!-- Unknown items -->
@@ -90,6 +95,7 @@
     <string name="audio_effects">Audio effects</string>
     <string name="playback_speed">Playback speed</string>
     <string name="volume">Volume</string>
+    <string name="activity_local_songs">Music on this device</string>
     <string name="widget_idle_title">Nothing playing</string>
     <string name="widget_idle_subtitle">Tap to pick something</string>
     <string name="greeting_morning">Good morning</string>

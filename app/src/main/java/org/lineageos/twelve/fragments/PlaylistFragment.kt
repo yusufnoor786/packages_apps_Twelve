@@ -28,7 +28,6 @@ import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
@@ -74,7 +73,7 @@ class PlaylistFragment : CollapsingToolbarLayoutFragment(R.layout.fragment_playl
     private val infoNestedScrollView by getViewProperty<NestedScrollView?>(R.id.infoNestedScrollView)
     private val linearProgressIndicator by getViewProperty<LinearProgressIndicator>(R.id.linearProgressIndicator)
     private val noElementsNestedScrollView by getViewProperty<NestedScrollView>(R.id.noElementsNestedScrollView)
-    private val playAllButton by getViewProperty<FloatingActionButton>(R.id.playAllButton)
+    private val playAllButton by getViewProperty<MaterialButton>(R.id.playAllButton)
     private val playlistNameTextView by getViewProperty<TextView>(R.id.playlistNameTextView)
     private val playButtonsLinearLayout by getViewProperty<LinearLayout>(R.id.playButtonsLinearLayout)
     private val playNextButton by getViewProperty<MaterialButton>(R.id.playNextButton)
@@ -112,8 +111,10 @@ class PlaylistFragment : CollapsingToolbarLayoutFragment(R.layout.fragment_playl
             UniqueItemDiffCallback(),
             ::ListItem,
         ) {
+            override val groupedRows = true
+
             override fun ViewHolder.onBindView(item: Audio) {
-                view.setExpressiveCard()
+                view.setGroupPosition(bindingAdapterPosition, itemCount)
                 view.setLeadingCover(item.thumbnail, R.drawable.ic_music_note)
                 view.setOnClickListener {
                     viewModel.playPlaylist(bindingAdapterPosition)
@@ -190,17 +191,6 @@ class PlaylistFragment : CollapsingToolbarLayoutFragment(R.layout.fragment_playl
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(noElementsNestedScrollView) { v, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-
-            v.updatePadding(
-                insets,
-                bottom = true,
-            )
-
-            windowInsets
-        }
-
-        ViewCompat.setOnApplyWindowInsetsListener(playButtonsLinearLayout) { v, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
 
             v.updatePadding(

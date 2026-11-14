@@ -12,6 +12,13 @@ data class ActivityTab(
 ) : UniqueItem<ActivityTab> {
     override fun areItemsTheSame(other: ActivityTab) = id == other.id
 
+    companion object {
+        /**
+         * The id of the tab that lists the songs of the device, as a list.
+         */
+        const val LOCAL_SONGS_ID = "local_songs"
+    }
+
     override fun areContentsTheSame(other: ActivityTab) =
         title == other.title && items.toTypedArray().contentEquals(other.items.toTypedArray())
 }

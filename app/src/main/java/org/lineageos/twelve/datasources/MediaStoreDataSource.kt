@@ -218,89 +218,40 @@ class MediaStoreDataSource(
 
     override fun providerOf(mediaItemUri: Uri) = providersManager.providerOf(mediaItemUri)
 
+    /**
+     * The home of the offline mode is the music that is on the device and nothing else: no shelves
+     * of random albums, artists and genres. Without music it is empty.
+     */
     override fun activity(
         providerIdentifier: ProviderIdentifier,
     ) = providersManager.flatMapWithInstanceOf(providerIdentifier) {
-        combine(
-            combine(
-                mostPlayedAlbums(),
-                mostPlayedArtists(),
-                mostPlayedGenres(),
-            ) { mostPlayedAlbums, mostPlayedArtists, mostPlayedGenres ->
-                listOf(
-                    mostPlayedAlbums.map {
-                        ActivityTab(
-                            "most_played_albums",
-                            LocalizedString.StringResIdLocalizedString(
-                                R.string.activity_most_played_albums
-                            ),
-                            it,
-                        )
-                    },
-                    mostPlayedArtists.map {
-                        ActivityTab(
-                            "most_played_artists",
-                            LocalizedString.StringResIdLocalizedString(
-                                R.string.activity_most_played_artists
-                            ),
-                            it,
-                        )
-                    },
-                    mostPlayedGenres.map {
-                        ActivityTab(
-                            "most_played_genres",
-                            LocalizedString.StringResIdLocalizedString(
-                                R.string.activity_most_played_genres
-                            ),
-                            it,
-                        )
-                    },
+        contentResolver.queryFlow(
+            audiosUri,
+            audiosProjection,
+            Bundle {
+                putString(ContentResolver.QUERY_ARG_SQL_SELECTION, MUSIC_SELECTION)
+                putStringArray(
+                    ContentResolver.QUERY_ARG_SORT_COLUMNS,
+                    arrayOf(MediaStore.Audio.AudioColumns.DATE_ADDED),
                 )
-            },
-            albums(providerIdentifier, SortingRule(SortingStrategy.RANDOM)),
-            artists(providerIdentifier, SortingRule(SortingStrategy.RANDOM)),
-            genres(providerIdentifier, SortingRule(SortingStrategy.RANDOM)),
-        ) { mostPlayedTabs, albums, artists, genres ->
+                putInt(
+                    ContentResolver.QUERY_ARG_SORT_DIRECTION,
+                    ContentResolver.QUERY_SORT_DIRECTION_DESCENDING,
+                )
+            }
+        ).mapEachRowToAudio().mapLatest { audios ->
             Result.Success(
-                buildList {
-                    addAll(mostPlayedTabs)
-                    add(
-                        albums.map {
-                            ActivityTab(
-                                "random_albums",
-                                LocalizedString.StringResIdLocalizedString(
-                                    R.string.activity_random_albums
-                                ),
-                                it,
-                            )
-                        }
+                when (audios.isEmpty()) {
+                    true -> emptyList()
+                    false -> listOf(
+                        ActivityTab(
+                            ActivityTab.LOCAL_SONGS_ID,
+                            LocalizedString.StringResIdLocalizedString(
+                                R.string.activity_local_songs
+                            ),
+                            audios,
+                        )
                     )
-                    add(
-                        artists.map {
-                            ActivityTab(
-                                "random_artists",
-                                LocalizedString.StringResIdLocalizedString(
-                                    R.string.activity_random_artists
-                                ),
-                                it,
-                            )
-                        }
-                    )
-                    add(
-                        genres.map {
-                            ActivityTab(
-                                "random_genres",
-                                LocalizedString.StringResIdLocalizedString(
-                                    R.string.activity_random_genres
-                                ),
-                                it,
-                            )
-                        }
-                    )
-                }.mapNotNull {
-                    it.getOrNull()?.takeIf { activityTab ->
-                        activityTab.items.isNotEmpty()
-                    }
                 }
             )
         }
@@ -360,6 +311,7 @@ class MediaStoreDataSource(
             audiosUri,
             audiosProjection,
             Bundle {
+                putString(ContentResolver.QUERY_ARG_SQL_SELECTION, MUSIC_SELECTION)
                 putSortingRule(
                     sortingRule,
                     fallbackColumn = MediaStore.Audio.AudioColumns.TITLE,
@@ -1252,6 +1204,20 @@ class MediaStoreDataSource(
             MediaStore.Audio.AlbumColumns.ARTIST,
             MediaStore.Audio.AlbumColumns.LAST_YEAR,
         )
+
+        /**
+         * Which audio files are music: flagged as music by the system, long enough not to be a
+         * voice note or a sound effect, and not stored by messengers or other apps for themselves.
+         */
+        private val MUSIC_SELECTION = listOf(
+            "${MediaStore.Audio.AudioColumns.IS_MUSIC} != 0",
+            "${MediaStore.Audio.AudioColumns.DURATION} >= 30000",
+            "${MediaStore.MediaColumns.RELATIVE_PATH} NOT LIKE 'Android/%'",
+            "${MediaStore.MediaColumns.RELATIVE_PATH} NOT LIKE '%WhatsApp%'",
+            "${MediaStore.MediaColumns.RELATIVE_PATH} NOT LIKE '%Telegram%'",
+            "${MediaStore.MediaColumns.RELATIVE_PATH} NOT LIKE '%Recordings%'",
+            "${MediaStore.MediaColumns.RELATIVE_PATH} NOT LIKE '%Voice%'",
+        ).joinToString(" AND ")
 
         private val artistsProjection = arrayOf(
             BaseColumns._ID,

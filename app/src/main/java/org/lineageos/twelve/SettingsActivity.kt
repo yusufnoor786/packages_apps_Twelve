@@ -13,7 +13,6 @@ import androidx.preference.PreferenceCategory
 import android.widget.TextView
 import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.GradientDrawable
-import android.graphics.Typeface
 import android.content.res.ColorStateList
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
@@ -143,12 +142,21 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
                 @SuppressLint("RestrictedApi")
                 override fun onChildViewAttachedToWindow(view: View) {
                     val position = getChildAdapterPosition(view)
-                    val preference = (adapter as? PreferenceGroupAdapter)?.getItem(position)
+                    val groupAdapter = adapter as? PreferenceGroupAdapter ?: return
+                    val preference = groupAdapter.getItem(position)
+
+                    // Settings between two categories are one connected group
+                    fun breaksGroup(at: Int) = at !in 0 until groupAdapter.itemCount ||
+                            groupAdapter.getItem(at) is PreferenceCategory
 
                     when (preference) {
                         null -> Unit
                         is PreferenceCategory -> styleCategory(view)
-                        else -> styleRow(view)
+                        else -> styleRow(
+                            view,
+                            isFirst = breaksGroup(position - 1),
+                            isLast = breaksGroup(position + 1),
+                        )
                     }
                 }
 
@@ -245,12 +253,17 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
 }
 
 /**
- * Every setting is a rounded tonal card with room around it.
+ * Every setting is a row of a connected group: big round corners on the outside of the group,
+ * small ones between its rows.
  */
-private fun styleRow(view: View) {
+private fun styleRow(view: View, isFirst: Boolean, isLast: Boolean) {
     val density = view.resources.displayMetrics.density
+    val outer = 28 * density
+    val inner = 6 * density
+    val top = if (isFirst) outer else inner
+    val bottom = if (isLast) outer else inner
     val card = GradientDrawable().apply {
-        cornerRadius = 24 * density
+        cornerRadii = floatArrayOf(top, top, top, top, bottom, bottom, bottom, bottom)
         setColor(
             MaterialColors.getColor(
                 view, com.google.android.material.R.attr.colorSurfaceContainerHigh
@@ -267,8 +280,8 @@ private fun styleRow(view: View) {
     )
     view.clipToOutline = true
     (view.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
-        val side = (12 * density).toInt()
-        val gap = (3 * density).toInt()
+        val side = (16 * density).toInt()
+        val gap = (1 * density).toInt()
         it.setMargins(side, gap, side, gap)
         view.layoutParams = it
     }
@@ -276,11 +289,14 @@ private fun styleRow(view: View) {
 
 private fun styleCategory(view: View) {
     view.findViewById<TextView>(android.R.id.title)?.apply {
-        setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_TitleMedium)
-        setTypeface(typeface, Typeface.BOLD)
+        setTextAppearance(
+            com.google.android.material.R.style.TextAppearance_Material3_TitleMedium_Emphasized
+        )
+        setTextColor(MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary))
     }
     (view.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
-        it.topMargin = (16 * view.resources.displayMetrics.density).toInt()
+        it.topMargin = (20 * view.resources.displayMetrics.density).toInt()
+        it.bottomMargin = (6 * view.resources.displayMetrics.density).toInt()
         view.layoutParams = it
     }
 }

@@ -13,7 +13,7 @@
         android:id="@+id/appBarLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_main_header"
+        android:background="?attr/colorSurface"
         android:fitsSystemWindows="true"
         app:elevation="0dp"
         app:liftOnScroll="false"
@@ -21,63 +21,63 @@
         app:layout_constraintStart_toStartOf="@+id/contentCoordinatorLayout"
         app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:id="@+id/greetingTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="12dp"
-            android:alpha="0.75"
-            android:textAppearance="?attr/textAppearanceLabelLarge"
-            android:textColor="?attr/colorOnPrimaryContainer"
-            tools:text="Good evening" />
-
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:titleTextAppearance="@style/TextAppearance.Twelve.HeaderTitle"
-            app:titleTextColor="?attr/colorOnPrimaryContainer"
-            tools:title="@string/app_name">
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="12dp">
 
-            <!-- The actions live in one pill -->
+            <!-- The mark of the app: a note in a Material shape -->
+            <FrameLayout
+                android:layout_width="56dp"
+                android:layout_height="56dp">
+
+                <ImageView
+                    android:id="@+id/brandShapeImageView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:importantForAccessibility="no" />
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_music_note"
+                    app:tint="?attr/colorOnPrimaryContainer" />
+
+            </FrameLayout>
+
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:layout_marginEnd="16dp"
-                android:background="@drawable/bg_header_actions"
-                android:orientation="horizontal"
-                android:padding="4dp">
+                android:layout_marginStart="14dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/refreshMaterialButton"
-                    style="?attr/materialIconButtonStyle"
+                <TextView
+                    android:id="@+id/greetingTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:contentDescription="@string/refresh"
-                    android:tooltipText="@string/refresh"
-                    android:visibility="gone"
-                    app:icon="@drawable/ic_sync" />
+                    android:textAppearance="?attr/textAppearanceLabelLargeEmphasized"
+                    android:textColor="?attr/colorPrimary"
+                    tools:text="Good evening" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/importMaterialButton"
-                    style="?attr/materialIconButtonStyle"
-                    android:layout_width="wrap_content"
+                <com.google.android.material.appbar.MaterialToolbar
+                    android:id="@+id/toolbar"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:contentDescription="@string/import_playlist"
-                    android:tooltipText="@string/import_playlist"
-                    android:visibility="gone"
-                    app:icon="@drawable/ic_playlist_add" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/settingsMaterialButton"
-                    style="?attr/materialIconButtonStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="@string/title_activity_settings"
-                    android:tooltipText="@string/title_activity_settings"
-                    app:icon="@drawable/ic_settings" />
+                    android:minHeight="0dp"
+                    android:paddingStart="0dp"
+                    android:paddingEnd="0dp"
+                    app:contentInsetStart="0dp"
+                    app:titleMarginStart="0dp"
+                    app:titleTextAppearance="@style/TextAppearance.Twelve.HeaderTitle"
+                    app:titleTextColor="?attr/colorOnSurface"
+                    tools:title="@string/app_name" />
 
             </LinearLayout>
 
@@ -86,51 +86,72 @@
                 style="?attr/materialButtonTonalStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="4dp"
+                android:maxWidth="140dp"
                 tools:icon="@drawable/ic_shelves"
                 tools:text="Pixel 7 Pro" />
 
-        </com.google.android.material.appbar.MaterialToolbar>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/refreshMaterialButton"
+                style="@style/Widget.Material3Expressive.Button.IconButton.Tonal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/refresh"
+                android:tooltipText="@string/refresh"
+                android:visibility="gone"
+                app:icon="@drawable/ic_sync" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/importMaterialButton"
+                style="@style/Widget.Material3Expressive.Button.IconButton.Tonal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/import_playlist"
+                android:tooltipText="@string/import_playlist"
+                android:visibility="gone"
+                app:icon="@drawable/ic_playlist_add" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/settingsMaterialButton"
+                style="@style/Widget.Material3Expressive.Button.IconButton.Filled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/title_activity_settings"
+                android:tooltipText="@string/title_activity_settings"
+                app:icon="@drawable/ic_settings" />
+
+        </LinearLayout>
 
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/modeToggleGroup"
-            style="@style/Widget.Material3Expressive.MaterialButtonToggleGroup"
+            style="@style/Widget.Material3Expressive.MaterialButtonGroup.Connected"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="12dp"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="10dp"
             android:contentDescription="@string/mode_switch_description"
             app:selectionRequired="true"
             app:singleSelection="true">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/offlineModeButton"
-                style="?attr/materialButtonTonalStyle"
+                style="@style/Widget.Twelve.ConnectedButton"
                 android:layout_width="0dp"
-                android:layout_height="56dp"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:text="@string/mode_offline"
-                android:textAppearance="?attr/textAppearanceTitleMedium"
-                android:textColor="@color/mode_toggle_foreground"
-                app:backgroundTint="@color/mode_toggle_background"
-                app:icon="@drawable/ic_smartphone"
-                app:iconTint="@color/mode_toggle_foreground" />
+                app:icon="@drawable/ic_smartphone" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/onlineModeButton"
-                style="?attr/materialButtonTonalStyle"
+                style="@style/Widget.Twelve.ConnectedButton"
                 android:layout_width="0dp"
-                android:layout_height="56dp"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:text="@string/mode_online"
-                android:textAppearance="?attr/textAppearanceTitleMedium"
-                android:textColor="@color/mode_toggle_foreground"
-                app:backgroundTint="@color/mode_toggle_background"
-                app:icon="@drawable/ic_cloud"
-                app:iconTint="@color/mode_toggle_foreground" />
+                app:icon="@drawable/ic_cloud" />
 
         </com.google.android.material.button.MaterialButtonToggleGroup>
 

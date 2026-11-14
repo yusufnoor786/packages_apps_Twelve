@@ -36,8 +36,7 @@
                     android:layout_marginBottom="18dp"
                     android:paddingHorizontal="16dp"
                     android:text="@string/artist_albums_header"
-                    android:textAppearance="?attr/textAppearanceHeadlineSmall"
-                    android:textStyle="bold" />
+                    android:textAppearance="?attr/textAppearanceHeadlineSmallEmphasized" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/albumsRecyclerView"
@@ -67,8 +66,7 @@
                     android:layout_marginBottom="18dp"
                     android:paddingHorizontal="16dp"
                     android:text="@string/artist_appears_in_album_header"
-                    android:textAppearance="?attr/textAppearanceHeadlineSmall"
-                    android:textStyle="bold" />
+                    android:textAppearance="?attr/textAppearanceHeadlineSmallEmphasized" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/appearsInAlbumRecyclerView"
@@ -98,8 +96,7 @@
                     android:layout_marginBottom="18dp"
                     android:paddingHorizontal="16dp"
                     android:text="@string/artist_appears_in_playlist_header"
-                    android:textAppearance="?attr/textAppearanceHeadlineSmall"
-                    android:textStyle="bold" />
+                    android:textAppearance="?attr/textAppearanceHeadlineSmallEmphasized" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/appearsInPlaylistRecyclerView"

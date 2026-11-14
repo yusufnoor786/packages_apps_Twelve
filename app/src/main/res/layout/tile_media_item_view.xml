@@ -12,12 +12,12 @@
     android:orientation="horizontal"
     android:padding="8dp">
 
-    <androidx.cardview.widget.CardView
+    <org.lineageos.twelve.ui.expressive.ShapeMaskLayout
+        android:id="@+id/shapeMaskLayout"
         android:layout_width="64dp"
         android:layout_height="64dp"
-        app:cardBackgroundColor="@android:color/transparent"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="0dp">
+        app:maskShape="cookie_6"
+        app:pressedShape="square">
 
         <ImageView
             android:id="@+id/placeholderImageView"
@@ -38,7 +38,7 @@
             android:contentDescription="@string/content_description_thumbnail"
             android:scaleType="centerCrop" />
 
-    </androidx.cardview.widget.CardView>
+    </org.lineageos.twelve.ui.expressive.ShapeMaskLayout>
 
     <LinearLayout
         android:layout_width="0dp"
@@ -54,9 +54,8 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="1"
-            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textAppearance="?attr/textAppearanceTitleSmallEmphasized"
             android:textColor="?attr/colorOnSurface"
-            android:textStyle="bold"
             android:visibility="gone"
             tools:text="Headline"
             tools:visibility="visible" />

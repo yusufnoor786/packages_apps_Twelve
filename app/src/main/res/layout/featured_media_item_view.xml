@@ -47,9 +47,8 @@
         android:ellipsize="end"
         android:maxLines="1"
         android:paddingHorizontal="6dp"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
+        android:textAppearance="?attr/textAppearanceTitleMediumEmphasized"
         android:textColor="?attr/colorOnPrimaryContainer"
-        android:textStyle="bold"
         android:visibility="gone"
         tools:text="Headline"
         tools:visibility="visible" />

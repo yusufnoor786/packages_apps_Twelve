@@ -79,6 +79,8 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
         UniqueItemDiffCallback(),
         ::ListItem,
     ) {
+        override val groupedRows = true
+
         override fun ViewHolder.onBindView(item: Playlist) {
             when (item === addNewPlaylistItem) {
                 true -> {
@@ -92,7 +94,7 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
                     }
                     view.setOnLongClickListener(null)
 
-                    view.setExpressiveCard(highlighted = true)
+                    view.setGroupPosition(0, 1, highlighted = true)
                     view.setLeadingIconImage(R.drawable.ic_playlist_add)
                     view.setHeadlineText(R.string.create_playlist)
                 }
@@ -112,7 +114,7 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
                         true
                     }
 
-                    view.setExpressiveCard()
+                    view.setGroupPosition(bindingAdapterPosition - 1, itemCount - 1)
                     view.setLeadingCover(
                         item.thumbnail,
                         when (item.type) {

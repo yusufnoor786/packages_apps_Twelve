@@ -39,6 +39,8 @@ import org.lineageos.twelve.ui.recyclerview.UniqueItemDiffCallback
 import org.lineageos.twelve.ui.views.ActivityTabView
 import org.lineageos.twelve.ui.views.PullToRefreshLayout
 import org.lineageos.twelve.utils.PermissionsChecker
+import org.lineageos.twelve.utils.TimestampFormatter
+import org.lineageos.twelve.ui.views.ListItem
 import org.lineageos.twelve.utils.PermissionsUtils
 import org.lineageos.twelve.viewmodels.ActivityViewModel
 
@@ -108,6 +110,39 @@ class ActivityFragment : Fragment(R.layout.fragment_activity) {
         }
     }
 
+    // The songs of the device are a plain list
+    private val songsAdapter by lazy {
+        object : SimpleListAdapter<Audio, ListItem>(
+            UniqueItemDiffCallback(),
+            ::ListItem,
+        ) {
+            override val groupedRows = true
+
+            override fun ViewHolder.onBindView(item: Audio) {
+                view.setGroupPosition(bindingAdapterPosition, itemCount)
+                view.setLeadingCover(item.thumbnail, R.drawable.ic_music_note)
+                view.headlineText = item.title
+                item.artistName?.also {
+                    view.supportingText = it
+                } ?: view.setSupportingText(R.string.artist_unknown)
+                view.trailingSupportingText = item.durationMs?.let {
+                    TimestampFormatter.formatTimestampMillis(it)
+                }
+
+                view.setOnClickListener {
+                    viewModel.playAudio(currentList, bindingAdapterPosition)
+                }
+                view.setOnLongClickListener {
+                    findNavController().navigateSafe(
+                        R.id.action_mainFragment_to_fragment_media_item_bottom_sheet_dialog,
+                        MediaItemBottomSheetDialogFragment.createBundle(item.uri)
+                    )
+                    true
+                }
+            }
+        }
+    }
+
     // Permissions
     private val permissionsChecker = PermissionsChecker(
         this, PermissionsUtils.mainPermissions
@@ -132,6 +167,7 @@ class ActivityFragment : Fragment(R.layout.fragment_activity) {
             windowInsets
         }
 
+        recyclerView.setItemViewCacheSize(SECTION_CACHE_SIZE)
         recyclerView.adapter = adapter
 
         pullToRefreshLayout.onRefresh = { viewModel.refreshContent() }
@@ -165,7 +201,22 @@ class ActivityFragment : Fragment(R.layout.fragment_activity) {
 
                     val data = it.data
 
-                    adapter.submitList(data)
+                    val songs = data.singleOrNull { it.id == ActivityTab.LOCAL_SONGS_ID }
+                    when (songs) {
+                        null -> {
+                            if (recyclerView.adapter !== adapter) {
+                                recyclerView.adapter = adapter
+                            }
+                            adapter.submitList(data)
+                        }
+
+                        else -> {
+                            if (recyclerView.adapter !== songsAdapter) {
+                                recyclerView.adapter = songsAdapter
+                            }
+                            songsAdapter.submitList(songs.items.filterIsInstance<Audio>())
+                        }
+                    }
 
                     val isEmpty = it.data.isEmpty()
                     recyclerView.isVisible = !isEmpty
@@ -185,6 +236,8 @@ class ActivityFragment : Fragment(R.layout.fragment_activity) {
     }
 
     companion object {
+        private const val SECTION_CACHE_SIZE = 12
+
         private val LOG_TAG = ActivityFragment::class.simpleName!!
 
     }

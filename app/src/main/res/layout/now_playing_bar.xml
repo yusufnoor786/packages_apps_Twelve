@@ -3,98 +3,122 @@
      SPDX-FileCopyrightText: The LineageOS Project
      SPDX-License-Identifier: Apache-2.0
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="@dimen/now_playing_bar_height"
-    android:gravity="center_vertical"
-    android:orientation="horizontal"
-    android:paddingStart="8dp"
-    android:paddingEnd="8dp">
+    android:layout_height="@dimen/now_playing_bar_height">
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/thumbnailMaterialCardView"
-        style="?attr/materialCardViewFilledStyle"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        app:cardBackgroundColor="?attr/colorSecondaryContainer"
-        app:cardCornerRadius="16dp">
+    <!-- The cover, blurred and darkened: the bar never looks like the list under it -->
+    <ImageView
+        android:id="@+id/backdropImageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop" />
 
-        <ImageView
-            android:id="@+id/thumbnailImageView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:contentDescription="@string/content_description_thumbnail"
-            android:scaleType="centerCrop" />
-
-    </com.google.android.material.card.MaterialCardView>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_now_playing_bar_scrim" />
 
     <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="12dp"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
 
-        <TextView
-            android:id="@+id/titleTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textAppearance="?attr/textAppearanceTitleSmall"
-            android:textColor="?attr/colorOnSurface"
-            tools:text="Tokyo Story" />
+        <org.lineageos.twelve.ui.expressive.ShapeMaskLayout
+            android:id="@+id/thumbnailMaskLayout"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            app:maskShape="cookie_9"
+            app:pressedShape="none">
 
-        <TextView
-            android:id="@+id/artistNameTextView"
-            android:layout_width="match_parent"
+            <ImageView
+                android:id="@+id/thumbnailImageView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#33FFFFFF"
+                android:contentDescription="@string/content_description_thumbnail"
+                android:scaleType="centerCrop" />
+
+        </org.lineageos.twelve.ui.expressive.ShapeMaskLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            tools:text="Ryuichi Sakamoto" />
+            android:layout_marginHorizontal="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/titleTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textAppearance="?attr/textAppearanceTitleSmallEmphasized"
+                android:textColor="@android:color/white"
+                tools:text="Tokyo Story" />
+
+            <TextView
+                android:id="@+id/artistNameTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:alpha="0.75"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="@android:color/white"
+                tools:text="Ryuichi Sakamoto" />
+
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="52dp"
+            android:layout_height="52dp">
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/circularProgressIndicator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                app:indicatorColor="@android:color/white"
+                app:indicatorSize="50dp"
+                app:trackColor="#40FFFFFF"
+                app:trackThickness="3dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/playPauseMaterialButton"
+                style="?attr/materialIconButtonFilledStyle"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:contentDescription="@string/content_description_play_pause"
+                android:padding="0dp"
+                app:backgroundTint="@android:color/white"
+                app:icon="@drawable/avd_play_to_pause"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconTint="#FF1D1B20" />
+
+        </FrameLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/nextMaterialButton"
+            style="?attr/materialIconButtonStyle"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:contentDescription="@string/content_description_next_track"
+            android:padding="0dp"
+            app:icon="@drawable/ic_skip_next"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:iconTint="@android:color/white" />
 
     </LinearLayout>
 
-    <FrameLayout
-        android:layout_width="52dp"
-        android:layout_height="52dp">
-
-        <com.google.android.material.progressindicator.CircularProgressIndicator
-            android:id="@+id/circularProgressIndicator"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            app:indicatorSize="48dp"
-            app:trackThickness="3dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/playPauseMaterialButton"
-            style="?attr/materialIconButtonFilledStyle"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_gravity="center"
-            android:contentDescription="@string/content_description_play_pause"
-            android:padding="0dp"
-            app:icon="@drawable/avd_play_to_pause"
-            app:iconGravity="textStart"
-            app:iconPadding="0dp" />
-
-    </FrameLayout>
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/nextMaterialButton"
-        style="?attr/materialIconButtonStyle"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:contentDescription="@string/content_description_next_track"
-        android:padding="0dp"
-        app:icon="@drawable/ic_skip_next"
-        app:iconGravity="textStart"
-        app:iconPadding="0dp"
-        app:iconTint="?attr/colorOnSurface" />
-
-</LinearLayout>
+</FrameLayout>

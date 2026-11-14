@@ -11,7 +11,7 @@ import androidx.annotation.IdRes
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import com.google.android.material.chip.ChipGroup
+import com.google.android.material.button.MaterialButtonToggleGroup
 import org.lineageos.twelve.R
 import org.lineageos.twelve.ext.getViewProperty
 
@@ -20,28 +20,28 @@ import org.lineageos.twelve.ext.getViewProperty
  */
 class LibraryFragment : Fragment(R.layout.fragment_library) {
     // Views
-    private val chipGroup by getViewProperty<ChipGroup>(R.id.chipGroup)
+    private val menuToggleGroup by getViewProperty<MaterialButtonToggleGroup>(R.id.menuToggleGroup)
     private val viewPager2 by getViewProperty<ViewPager2>(R.id.viewPager2)
 
     // ViewPager2
     private enum class Menus(
-        @IdRes val chipId: Int,
+        @IdRes val buttonId: Int,
         val fragment: () -> Fragment,
     ) {
         ALBUMS(
-            R.id.albumsChip,
+            R.id.albumsButton,
             { AlbumsFragment() },
         ),
         ARTISTS(
-            R.id.artistsChip,
+            R.id.artistsButton,
             { ArtistsFragment() },
         ),
         GENRES(
-            R.id.genresChip,
+            R.id.genresButton,
             { GenresFragment() },
         ),
         PLAYLISTS(
-            R.id.playlistsChip,
+            R.id.playlistsButton,
             { PlaylistsFragment() },
         ),
     }
@@ -57,19 +57,19 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
         }
         viewPager2.offscreenPageLimit = 1
 
-        // The chips and the pages follow each other
-        chipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
-            val position = Menus.entries.indexOfFirst { it.chipId in checkedIds }
-            if (position >= 0 && position != viewPager2.currentItem) {
+        // The buttons and the pages follow each other
+        menuToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            val position = Menus.entries.indexOfFirst { it.buttonId == checkedId }
+            if (isChecked && position >= 0 && position != viewPager2.currentItem) {
                 viewPager2.currentItem = position
             }
         }
         viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
-                chipGroup.check(Menus.entries[position].chipId)
+                menuToggleGroup.check(Menus.entries[position].buttonId)
             }
         })
-        chipGroup.check(Menus.entries[viewPager2.currentItem].chipId)
+        menuToggleGroup.check(Menus.entries[viewPager2.currentItem].buttonId)
     }
 
     override fun onDestroyView() {
