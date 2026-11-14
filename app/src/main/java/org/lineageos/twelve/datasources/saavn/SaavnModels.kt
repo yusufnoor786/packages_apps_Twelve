@@ -45,6 +45,7 @@ data class SaavnAlbum(
     val artists: List<SaavnArtistRef>,
     val year: Int?,
     val songCount: Int?,
+    val language: String? = null,
 ) : SaavnEntity
 
 data class SaavnArtist(

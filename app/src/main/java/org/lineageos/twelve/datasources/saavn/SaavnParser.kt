@@ -103,6 +103,7 @@ object SaavnParser {
             year = element.string("year")?.toIntOrNull(),
             songCount = (moreInfo?.string("song_count") ?: element.string("list_count"))
                 ?.toIntOrNull(),
+            language = element.string("language") ?: moreInfo?.string("language"),
         )
     }
 

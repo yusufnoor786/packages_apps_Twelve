@@ -15,6 +15,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okio.IOException
 import java.io.File
+import java.net.URLEncoder
 import java.security.MessageDigest
 import org.lineageos.twelve.ext.executeAsync
 import org.lineageos.twelve.models.Error
@@ -205,9 +206,14 @@ class SaavnClient(
             return Result.Success(cached.element)
         }
 
+        // The home page modules follow the languages of the "L" cookie, like on the website
+        val languages = params.firstOrNull { it.first == "language" }?.second?.toString()
         val request = Request.Builder()
             .url(url)
             .header("User-Agent", USER_AGENT)
+            .apply {
+                languages?.let { header("Cookie", "L=" + URLEncoder.encode(it, "UTF-8")) }
+            }
             .build()
 
         return try {

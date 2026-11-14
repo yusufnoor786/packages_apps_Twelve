@@ -31,6 +31,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.MultiSelectListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
@@ -39,6 +40,9 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 import org.lineageos.twelve.ext.ENABLE_OFFLOAD_KEY
+import org.lineageos.twelve.ext.ONLINE_LANGUAGES_KEY
+import org.lineageos.twelve.ext.onlineLanguages
+import org.lineageos.twelve.ext.onlineLanguagesDefault
 import org.lineageos.twelve.ext.SKIP_SILENCE_KEY
 import org.lineageos.twelve.ext.setOffset
 import org.lineageos.twelve.viewmodels.SettingsViewModel
@@ -183,6 +187,9 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
         private val rescanMediaStore by lazy { findPreference<Preference>("rescan_media_store")!! }
         private val resetLocalStats by lazy { findPreference<Preference>("reset_local_stats")!! }
         private val skipSilence by lazy { findPreference<SwitchPreference>(SKIP_SILENCE_KEY)!! }
+        private val onlineLanguages by lazy {
+            findPreference<MultiSelectListPreference>(ONLINE_LANGUAGES_KEY)!!
+        }
 
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             super.onCreatePreferences(savedInstanceState, rootKey)
@@ -199,6 +206,12 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
                     viewModel.toggleSkipSilence(newValue as Boolean)
                 }
                 true
+            }
+
+            // Nothing chosen yet: show the languages that follow the phone
+            if (onlineLanguages.values.isEmpty()) {
+                onlineLanguages.values = preferenceManager.sharedPreferences
+                    ?.onlineLanguages?.toSet() ?: onlineLanguagesDefault.toSet()
             }
 
             resetLocalStats.setOnPreferenceClickListener {

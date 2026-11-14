@@ -117,7 +117,6 @@
             app:title="@string/spotify_client_secret" />
 
         <MultiSelectListPreference
-            app:defaultValue="@array/online_languages_default"
             app:entries="@array/online_languages_entries"
             app:entryValues="@array/online_languages_values"
             app:iconSpaceReserved="false"

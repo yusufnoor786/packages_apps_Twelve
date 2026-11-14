@@ -7,12 +7,14 @@ package org.lineageos.twelve
 
 import android.app.Application
 import androidx.media3.common.util.UnstableApi
+import androidx.preference.PreferenceManager
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import com.google.android.material.color.DynamicColors
 import kotlinx.coroutines.MainScope
 import org.lineageos.twelve.database.TwelveDatabase
+import org.lineageos.twelve.ext.followPhoneForOnlineLanguages
 import org.lineageos.twelve.repositories.MediaRepository
 import org.lineageos.twelve.repositories.OutputConfigurationRepository
 import org.lineageos.twelve.repositories.ProvidersRepository
@@ -37,6 +39,8 @@ class TwelveApplication : Application(), SingletonImageLoader.Factory {
 
         // Observe dynamic colors changes
         DynamicColors.applyToActivitiesIfAvailable(this)
+
+        PreferenceManager.getDefaultSharedPreferences(this).followPhoneForOnlineLanguages()
     }
 
     override fun newImageLoader(context: PlatformContext) = ImageLoader.Builder(this)

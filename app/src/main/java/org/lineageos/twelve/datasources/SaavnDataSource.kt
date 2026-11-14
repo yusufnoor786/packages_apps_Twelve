@@ -31,12 +31,14 @@ import org.lineageos.twelve.datasources.saavn.SaavnClient
 import org.lineageos.twelve.datasources.saavn.SaavnEntity
 import org.lineageos.twelve.datasources.saavn.SaavnLibraryStore
 import org.lineageos.twelve.datasources.saavn.SaavnParser
+import org.lineageos.twelve.datasources.saavn.SaavnShelf
 import org.lineageos.twelve.datasources.saavn.SaavnPlaylist
 import org.lineageos.twelve.datasources.saavn.SaavnSong
 import org.lineageos.twelve.datasources.saavn.SaavnStream
 import org.lineageos.twelve.datasources.saavn.StoredLibrary
 import org.lineageos.twelve.ext.onlineAudioQuality
 import org.lineageos.twelve.ext.onlineAudioQualityMobile
+import org.lineageos.twelve.ext.ONLINE_LANGUAGES_KEY
 import org.lineageos.twelve.ext.onlineLanguages
 import org.lineageos.twelve.models.ActivityTab
 import org.lineageos.twelve.models.Album
@@ -108,6 +110,18 @@ class SaavnDataSource(
     private val languages: List<String>
         get() = sharedPreferences.onlineLanguages
 
+    // Kept in a field: the preferences only hold a weak reference to it
+    private val languagesListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == ONLINE_LANGUAGES_KEY) {
+                refreshTick.value++
+            }
+        }
+
+    init {
+        sharedPreferences.registerOnSharedPreferenceChangeListener(languagesListener)
+    }
+
     // Status
 
     override fun status(
@@ -166,18 +180,24 @@ class SaavnDataSource(
             val favorites = library.favorites.toSet()
             val languages = languages
 
-            val trendingSongs = async {
-                languages.map { language ->
-                    async { client.trending("song", language) }
-                }.mapNotNull { it.await().data() }
-                    .flatMap { SaavnParser.results(it) }
-                    .mapNotNull { SaavnParser.song(it) }
-                    .distinctBy { it.id }
+            val trendingByLanguage = languages.map { language ->
+                language to async { client.trending("song", language) }
             }
             val modules = async { client.modules(languages.joinToString(",")) }
 
             val shelves = modules.await().data()?.let { SaavnParser.shelves(it) }.orEmpty()
-            val songs = trendingSongs.await()
+            val trending = trendingByLanguage.map { (language, request) ->
+                language to request.await().data()
+                    ?.let { SaavnParser.results(it) }.orEmpty()
+                    .mapNotNull { SaavnParser.song(it) }
+            }
+            val fromNewAlbums = songsOfNewAlbums(
+                trending.filter { it.second.isEmpty() }.map { it.first },
+                shelves,
+            )
+            val songs = interleave(trending.map { it.second } + listOf(fromNewAlbums))
+                .distinctBy { it.id }
+                .onEach { songCache[it.id] = it }
 
             if (shelves.isEmpty() && songs.isEmpty()) {
                 return@coroutineScope Result.Failure(Error.IO)
@@ -716,14 +736,99 @@ class SaavnDataSource(
         val id = audioUri.lastPathSegment ?: return Result.Failure(Error.NOT_FOUND)
         val favorites = store.favoritesIds.toSet()
 
-        return when (val response = client.suggestions(id, limit)) {
+        // What fits: the languages chosen in the settings and the one of the song itself, so a
+        // queue does not drift into another language through a duet
+        val allowed = languages.toSet() + listOfNotNull(song(id)?.language)
+        val fits = { song: SaavnSong -> song.language == null || song.language in allowed }
+
+        val radio = when (val response = client.suggestions(id, limit)) {
             is Result.Success -> SaavnParser.suggestions(response.data)
                 .filter { it.id != id }
-                .onEach { songCache[it.id] = it }
-                .map { it.toAudio(favorites) }
-                .let { Result.Success(it) }
+                .filter(fits)
 
-            is Result.Failure -> response
+            is Result.Failure -> emptyList()
+        }
+
+        // The radio knows little outside Indian music, the artist is the next best guess
+        val songs = radio.ifEmpty { similarSongs(id, limit).filter(fits) }
+
+        return when {
+            songs.isEmpty() -> Result.Failure(Error.NOT_FOUND)
+            else -> Result.Success(
+                songs.onEach { songCache[it.id] = it }.map { it.toAudio(favorites) }
+            )
+        }
+    }
+
+    /**
+     * Songs like the one of [id] when the radio has none: the top songs of its artists, those in
+     * the same language first.
+     */
+    private suspend fun similarSongs(id: String, limit: Int): List<SaavnSong> = coroutineScope {
+        val song = song(id) ?: return@coroutineScope emptyList()
+
+        val artistIds = song.artists.mapNotNull { it.id }.toSet()
+
+        val candidates = artistIds
+            .take(SIMILAR_ARTISTS)
+            .map { async { client.artist(it) } }
+            .mapNotNull { request ->
+                request.await().data()?.let { SaavnParser.artistPage(it) }?.topSongs
+            }
+            .let { interleave(it) }
+            .filter { it.id != id }
+            // An artist page also lists songs the artist only appears on (a children's song
+            // with a guest singer, say): keep those that credit one of the same artists
+            .filter { candidate -> candidate.artists.any { it.id != null && it.id in artistIds } }
+            // Other versions of the same song (remix, live, other albums) are not something new
+            .filter { it.baseTitle != song.baseTitle }
+            .distinctBy { it.baseTitle }
+
+        candidates
+            .sortedByDescending { it.language != null && it.language == song.language }
+            .take(limit)
+    }
+
+    // The title without what tells versions apart: "Despacito (Remix)" is "despacito"
+    private val SaavnSong.baseTitle: String
+        get() = title.lowercase()
+            .substringBefore(" (")
+            .substringBefore(" [")
+            .substringBefore(" - ")
+            .trim()
+
+    /**
+     * The first songs of the new albums in [languages], for languages that have no list of
+     * trending songs of their own.
+     */
+    private suspend fun songsOfNewAlbums(
+        languages: List<String>,
+        shelves: List<SaavnShelf>,
+    ): List<SaavnSong> = coroutineScope {
+        if (languages.isEmpty()) {
+            return@coroutineScope emptyList()
+        }
+
+        shelves.flatMap { it.items }
+            .filterIsInstance<SaavnAlbum>()
+            .filter { it.language in languages }
+            .distinctBy { it.id }
+            .take(NEW_ALBUMS_FOR_SONGS)
+            .map { async { client.album(it.id) } }
+            .mapNotNull { request ->
+                request.await().data()?.let { SaavnParser.albumPage(it) }?.songs
+                    ?.take(SONGS_PER_NEW_ALBUM)
+            }
+            .let { interleave(it) }
+    }
+
+    /**
+     * One item of each list in turn, so that no list comes all at the end.
+     */
+    private fun <T> interleave(lists: List<List<T>>): List<T> = buildList {
+        val longest = lists.maxOfOrNull { it.size } ?: 0
+        for (index in 0 until longest) {
+            lists.forEach { list -> list.getOrNull(index)?.let { add(it) } }
         }
     }
 
@@ -910,15 +1015,21 @@ class SaavnDataSource(
 
         private const val SONG_CACHE_SIZE = 600
         private const val SONGS_PER_REQUEST = 40
+        private const val SIMILAR_ARTISTS = 2
         private const val MAX_PLAYLIST_PAGES = 6
 
         /**
          * Languages offered as genres.
          */
         val LANGUAGES = listOf(
-            "hindi", "english", "punjabi", "tamil", "telugu", "bengali", "marathi", "gujarati",
-            "kannada", "malayalam", "bhojpuri", "haryanvi", "rajasthani", "assamese", "odia",
+            "hindi", "english", "spanish", "punjabi", "tamil", "telugu", "bengali", "marathi",
+            "gujarati", "kannada", "malayalam", "bhojpuri", "haryanvi", "rajasthani", "assamese",
+            "odia",
         )
+
+        // Songs taken from the new albums of a language that has no trending songs
+        private const val NEW_ALBUMS_FOR_SONGS = 6
+        private const val SONGS_PER_NEW_ALBUM = 3
 
         private fun catalogUri(vararg segments: String) = Uri.Builder()
             .scheme(SCHEME)

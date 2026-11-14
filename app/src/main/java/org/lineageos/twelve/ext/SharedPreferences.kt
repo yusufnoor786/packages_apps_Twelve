@@ -163,13 +163,71 @@ const val SPOTIFY_CLIENT_ID_KEY = "spotify_client_id"
 const val SPOTIFY_CLIENT_SECRET_KEY = "spotify_client_secret"
 
 const val ONLINE_LANGUAGES_KEY = "online_languages"
-private val ONLINE_LANGUAGES_DEFAULT = listOf("hindi", "english")
+
+/**
+ * The languages that suit the phone. A phone in a language of the catalog other than Hindi or
+ * English gets that language and English (and Hindi in India). Phones in English or Hindi keep
+ * Hindi and English: many phones in India run in English, US.
+ */
+val onlineLanguagesDefault: List<String>
+    get() {
+        val locale = java.util.Locale.getDefault()
+
+        return when (val own = ONLINE_LANGUAGE_OF_LOCALE[locale.language]) {
+            null, "hindi", "english" -> ONLINE_LANGUAGES_OLD_DEFAULT.toList()
+            else -> buildList {
+                add(own)
+                if (locale.country == "IN") {
+                    add("hindi")
+                }
+                add("english")
+            }
+        }.sortedBy { SaavnDataSource.LANGUAGES.indexOf(it) }
+    }
+
+private val ONLINE_LANGUAGE_OF_LOCALE = mapOf(
+    "hi" to "hindi",
+    "en" to "english",
+    "es" to "spanish",
+    "pa" to "punjabi",
+    "ta" to "tamil",
+    "te" to "telugu",
+    "bn" to "bengali",
+    "mr" to "marathi",
+    "gu" to "gujarati",
+    "kn" to "kannada",
+    "ml" to "malayalam",
+    "as" to "assamese",
+    "or" to "odia",
+)
+
+// The languages every install had before they followed the phone
+private val ONLINE_LANGUAGES_OLD_DEFAULT = setOf("hindi", "english")
+private const val ONLINE_LANGUAGES_FOLLOW_PHONE_KEY = "online_languages_follow_phone"
+
 val SharedPreferences.onlineLanguages: List<String>
     get() = getStringSet(ONLINE_LANGUAGES_KEY, null)
         ?.filter { it in SaavnDataSource.LANGUAGES }
         ?.sortedBy { SaavnDataSource.LANGUAGES.indexOf(it) }
         ?.takeIf { it.isNotEmpty() }
-        ?: ONLINE_LANGUAGES_DEFAULT
+        ?: onlineLanguagesDefault
+
+/**
+ * Once: phones that only have the old fixed choice, saved when the settings were first opened,
+ * get the languages of the phone instead.
+ */
+fun SharedPreferences.followPhoneForOnlineLanguages() {
+    if (getBoolean(ONLINE_LANGUAGES_FOLLOW_PHONE_KEY, false)) {
+        return
+    }
+
+    edit {
+        if (getStringSet(ONLINE_LANGUAGES_KEY, null) == ONLINE_LANGUAGES_OLD_DEFAULT) {
+            putStringSet(ONLINE_LANGUAGES_KEY, onlineLanguagesDefault.toSet())
+        }
+        putBoolean(ONLINE_LANGUAGES_FOLLOW_PHONE_KEY, true)
+    }
+}
 
 // Experimental prefs
 const val SPLIT_LOCAL_DEVICES_KEY = "split_local_devices"

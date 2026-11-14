@@ -273,6 +273,13 @@ class PlaybackService : MediaLibraryService() {
         )
     }
 
+    // The title without what tells versions apart: "Despacito (Remix)" is "despacito"
+    private fun String.autoplayBaseTitle() = lowercase()
+        .substringBefore(" (")
+        .substringBefore(" [")
+        .substringBefore(" - ")
+        .trim()
+
     private fun loadAutoplay() {
         if (!sharedPreferences.autoplay) {
             return
@@ -307,12 +314,18 @@ class PlaybackService : MediaLibraryService() {
                     is Result.Failure -> return@launch
                 }
 
-                val queued = (0 until player.mediaItemCount)
-                    .map { player.getMediaItemAt(it).mediaId }
-                    .toSet()
+                val queuedItems = (0 until player.mediaItemCount).map { player.getMediaItemAt(it) }
+                val queued = queuedItems.map { it.mediaId }.toSet()
+                // Another release of a song in the queue (other album, remix) is not new either
+                val queuedTitles = queuedItems
+                    .mapNotNull { it.mediaMetadata.title?.toString()?.autoplayBaseTitle() }
+                    .toMutableSet()
 
                 val items = suggestions
                     .filter { it.playbackUri != null && it.uri.toString() !in queued }
+                    .filter { audio ->
+                        audio.title?.autoplayBaseTitle()?.let { queuedTitles.add(it) } ?: true
+                    }
                     .map { it.toMedia3MediaItem(resources) }
 
                 if (items.isEmpty()) {

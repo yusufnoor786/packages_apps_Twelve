@@ -16,14 +16,11 @@
         <item>HIGH</item>
     </string-array>
 
-    <string-array name="online_languages_default" translatable="false">
-        <item>hindi</item>
-        <item>english</item>
-    </string-array>
 
     <string-array name="online_languages_entries" translatable="false">
         <item>Hindi</item>
         <item>English</item>
+        <item>Spanish</item>
         <item>Punjabi</item>
         <item>Tamil</item>
         <item>Telugu</item>
@@ -42,6 +39,7 @@
     <string-array name="online_languages_values" translatable="false">
         <item>hindi</item>
         <item>english</item>
+        <item>spanish</item>
         <item>punjabi</item>
         <item>tamil</item>
         <item>telugu</item>
