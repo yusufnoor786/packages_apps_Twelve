@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.lineageos.twelve.ext.navigateSafe
 import org.lineageos.twelve.ext.slideDown
@@ -255,12 +256,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         }
 
         launch {
-            combine(
-                nowPlayingViewModel.mediaItem,
-                isNowPlayingOpenFlow,
-            ) { mediaItem, isNowPlayingOpen ->
-                mediaItem != null && !isNowPlayingOpen
-            }
+            nowPlayingViewModel.mediaItem.map { it != null }
                 .distinctUntilChanged()
                 .flowOn(Dispatchers.IO)
                 .collectLatest { shouldBeVisible ->

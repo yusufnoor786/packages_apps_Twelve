@@ -95,7 +95,15 @@ class ActivityFragment : Fragment(R.layout.fragment_activity) {
                     true
                 }
 
-                view.setActivityTab(item, hero = bindingAdapterPosition == 0)
+                view.setActivityTab(
+                    item,
+                    when (bindingAdapterPosition) {
+                        0 -> ActivityTabView.Style.HERO
+                        else -> ActivityTabView.Style.entries[
+                            1 + (bindingAdapterPosition - 1) % (ActivityTabView.Style.entries.size - 1)
+                        ]
+                    },
+                )
             }
         }
     }

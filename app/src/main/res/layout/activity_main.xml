@@ -20,6 +20,14 @@
         app:defaultNavHost="true"
         app:navGraph="@navigation/fragment_main" />
 
+    <!-- Under the player, so that it is already there when the player is dragged away -->
+    <org.lineageos.twelve.ui.views.NowPlayingBar
+        android:id="@+id/nowPlayingBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:visibility="gone" />
+
     <!-- The player, above the main screen so that closing it doesn't rebuild what is below -->
     <FrameLayout
         android:id="@+id/nowPlayingContainer"
@@ -27,13 +35,6 @@
         android:layout_height="match_parent"
         android:clickable="true"
         android:focusable="true"
-        android:visibility="gone" />
-
-    <org.lineageos.twelve.ui.views.NowPlayingBar
-        android:id="@+id/nowPlayingBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
         android:visibility="gone" />
 
 </FrameLayout>
