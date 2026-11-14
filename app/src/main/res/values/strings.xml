@@ -90,6 +90,8 @@
     <string name="audio_effects">Audio effects</string>
     <string name="playback_speed">Playback speed</string>
     <string name="volume">Volume</string>
+    <string name="crossfade">Crossfade</string>
+    <string name="crossfade_summary">Seconds two songs overlap, 0 plays them gapless</string>
     <string name="share_playlist">Share playlist</string>
     <string name="save_playlist_to_file">Save playlist to a file</string>
     <string name="import_playlist">Import playlist</string>

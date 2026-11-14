@@ -12,10 +12,10 @@ import android.content.Intent
 import android.view.View
 import android.widget.RemoteViews
 import androidx.media3.session.MediaController
-import androidx.media3.session.SessionToken
 import kotlinx.coroutines.guava.await
 import org.lineageos.twelve.MainActivity
 import org.lineageos.twelve.R
+import org.lineageos.twelve.utils.SessionTokenUtils
 import org.lineageos.twelve.ext.typedPlaybackState
 import org.lineageos.twelve.models.PlaybackState
 import org.lineageos.twelve.services.PlaybackService
@@ -88,7 +88,8 @@ class NowPlayingAppWidgetProvider : BaseAppWidgetProvider<NowPlayingAppWidgetPro
             context: Context,
             block: suspend (MediaController) -> Unit,
         ) {
-            val sessionToken = SessionToken(
+            // Some ROMs hide the service from package queries, see SessionTokenUtils
+            val sessionToken = SessionTokenUtils.forLibraryService(
                 context,
                 ComponentName(context, PlaybackService::class.java)
             )

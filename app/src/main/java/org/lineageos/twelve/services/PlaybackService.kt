@@ -51,6 +51,7 @@ import org.lineageos.twelve.R
 import org.lineageos.twelve.TwelveApplication
 import org.lineageos.twelve.ext.Bundle
 import org.lineageos.twelve.ext.autoplay
+import org.lineageos.twelve.ext.crossfadeSeconds
 import org.lineageos.twelve.ext.enableFloatOutput
 import org.lineageos.twelve.ext.enableOffload
 import org.lineageos.twelve.ext.mapAsync
@@ -171,6 +172,7 @@ class PlaybackService : MediaLibraryService() {
     }
 
     private lateinit var player: ExoPlayer
+    private lateinit var crossfadeController: CrossfadeController
     private lateinit var mediaLibrarySession: MediaLibrarySession
 
     private val mediaRepositoryTree by lazy {
@@ -575,6 +577,13 @@ class PlaybackService : MediaLibraryService() {
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
 
+        crossfadeController = CrossfadeController(
+            this,
+            player,
+            audioAttributes,
+            fadeMs = { sharedPreferences.crossfadeSeconds * 1000L },
+        )
+
         mediaLibrarySession = MediaLibrarySession.Builder(
             this, player, mediaLibrarySessionCallback
         )
@@ -687,6 +696,7 @@ class PlaybackService : MediaLibraryService() {
 
         player.removeAnalyticsListener(analyticsListener)
 
+        crossfadeController.release()
         player.release()
         mediaLibrarySession.release()
 

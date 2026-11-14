@@ -64,6 +64,17 @@ var SharedPreferences.enableFloatOutput: Boolean
         putBoolean(ENABLE_FLOAT_OUTPUT_KEY, value)
     }
 
+const val CROSSFADE_SECONDS_KEY = "crossfade_seconds"
+
+/**
+ * How long two songs overlap at the end of one, in seconds. Zero is gapless playback.
+ */
+var SharedPreferences.crossfadeSeconds: Int
+    get() = getInt(CROSSFADE_SECONDS_KEY, 0).coerceIn(0, 12)
+    set(value) = edit {
+        putInt(CROSSFADE_SECONDS_KEY, value.coerceIn(0, 12))
+    }
+
 private const val STOP_PLAYBACK_ON_TASK_REMOVED_KEY = "stop_playback_on_task_removed"
 private const val STOP_PLAYBACK_ON_TASK_REMOVED_DEFAULT = false
 var SharedPreferences.stopPlaybackOnTaskRemoved: Boolean

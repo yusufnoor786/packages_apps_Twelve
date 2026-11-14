@@ -3,7 +3,9 @@
      SPDX-FileCopyrightText: The LineageOS Project
      SPDX-License-Identifier: Apache-2.0
 -->
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory
         app:iconSpaceReserved="false"
@@ -36,6 +38,16 @@
             app:key="stop_playback_on_task_removed"
             app:summary="@string/stop_playback_on_task_removed_summary"
             app:title="@string/stop_playback_on_task_removed" />
+
+        <SeekBarPreference
+            android:max="12"
+            app:defaultValue="0"
+            app:iconSpaceReserved="false"
+            app:key="crossfade_seconds"
+            app:min="0"
+            app:showSeekBarValue="true"
+            app:summary="@string/crossfade_summary"
+            app:title="@string/crossfade" />
 
         <SwitchPreference
             app:defaultValue="true"
