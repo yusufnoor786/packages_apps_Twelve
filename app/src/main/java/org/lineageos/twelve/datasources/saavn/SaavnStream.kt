@@ -20,7 +20,18 @@ object SaavnStream {
     enum class Quality(val bitrate: Int) {
         LOW(96),
         MEDIUM(160),
-        HIGH(320),
+        HIGH(320);
+
+        companion object {
+            /**
+             * The quality to stream at: the mobile data ceiling applies on metered networks, and
+             * never above the one for Wi-Fi.
+             */
+            fun forNetwork(wifi: Quality, mobile: Quality, metered: Boolean) = when (metered) {
+                true -> minOf(wifi, mobile)
+                false -> wifi
+            }
+        }
     }
 
     private val qualitySuffix = Regex("_96(\\.[A-Za-z0-9]+)$")

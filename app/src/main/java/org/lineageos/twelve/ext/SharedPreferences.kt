@@ -116,11 +116,26 @@ var SharedPreferences.onlineMode: Boolean
     }
 
 const val ONLINE_AUDIO_QUALITY_KEY = "online_audio_quality"
+const val ONLINE_AUDIO_QUALITY_MOBILE_KEY = "online_audio_quality_mobile"
 private val ONLINE_AUDIO_QUALITY_DEFAULT = SaavnStream.Quality.HIGH
-val SharedPreferences.onlineAudioQuality: SaavnStream.Quality
-    get() = getString(ONLINE_AUDIO_QUALITY_KEY, null)?.let { name ->
+private val ONLINE_AUDIO_QUALITY_MOBILE_DEFAULT = SaavnStream.Quality.MEDIUM
+
+private fun SharedPreferences.quality(key: String, default: SaavnStream.Quality) =
+    getString(key, null)?.let { name ->
         SaavnStream.Quality.entries.firstOrNull { it.name == name }
-    } ?: ONLINE_AUDIO_QUALITY_DEFAULT
+    } ?: default
+
+/**
+ * The best quality streamed over Wi-Fi (or any network that is not metered).
+ */
+val SharedPreferences.onlineAudioQuality: SaavnStream.Quality
+    get() = quality(ONLINE_AUDIO_QUALITY_KEY, ONLINE_AUDIO_QUALITY_DEFAULT)
+
+/**
+ * The best quality streamed over mobile data (or any other metered network).
+ */
+val SharedPreferences.onlineAudioQualityMobile: SaavnStream.Quality
+    get() = quality(ONLINE_AUDIO_QUALITY_MOBILE_KEY, ONLINE_AUDIO_QUALITY_MOBILE_DEFAULT)
 
 const val ONLINE_LANGUAGES_KEY = "online_languages"
 private val ONLINE_LANGUAGES_DEFAULT = listOf("hindi", "english")

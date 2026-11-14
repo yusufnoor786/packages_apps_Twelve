@@ -6,6 +6,7 @@
 package org.lineageos.twelve.datasources
 
 import android.content.SharedPreferences
+import android.net.ConnectivityManager
 import android.net.Uri
 import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +32,7 @@ import org.lineageos.twelve.datasources.saavn.SaavnSong
 import org.lineageos.twelve.datasources.saavn.SaavnStream
 import org.lineageos.twelve.datasources.saavn.StoredLibrary
 import org.lineageos.twelve.ext.onlineAudioQuality
+import org.lineageos.twelve.ext.onlineAudioQualityMobile
 import org.lineageos.twelve.ext.onlineLanguages
 import org.lineageos.twelve.models.ActivityTab
 import org.lineageos.twelve.models.Album
@@ -66,6 +68,7 @@ class SaavnDataSource(
     private val lyricsClient: LyricsClient,
     private val store: SaavnLibraryStore,
     private val sharedPreferences: SharedPreferences,
+    private val connectivityManager: ConnectivityManager? = null,
 ) : MediaDataSource {
     private val songCache: MutableMap<String, SaavnSong> = Collections.synchronizedMap(
         object : LinkedHashMap<String, SaavnSong>(256, 0.75f, true) {
@@ -87,8 +90,16 @@ class SaavnDataSource(
         refreshTick.value++
     }
 
+    /**
+     * The best quality for the network the phone is on right now: mobile data has a ceiling of its
+     * own, so that a song does not eat the plan.
+     */
     private val maxQuality: SaavnStream.Quality
-        get() = sharedPreferences.onlineAudioQuality
+        get() = SaavnStream.Quality.forNetwork(
+            sharedPreferences.onlineAudioQuality,
+            sharedPreferences.onlineAudioQualityMobile,
+            connectivityManager?.isActiveNetworkMetered == true,
+        )
 
     private val languages: List<String>
         get() = sharedPreferences.onlineLanguages

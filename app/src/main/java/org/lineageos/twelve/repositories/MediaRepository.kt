@@ -7,6 +7,7 @@ package org.lineageos.twelve.repositories
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.net.ConnectivityManager
 import android.net.Uri
 import androidx.preference.PreferenceManager
 import kotlinx.coroutines.CoroutineScope
@@ -125,6 +126,7 @@ class MediaRepository(
             LyricsClient(okHttpClient),
             SaavnLibraryStore(File(context.filesDir, ONLINE_LIBRARY_FILE_NAME)),
             sharedPreferences,
+            context.getSystemService(ConnectivityManager::class.java),
         )
     }
 

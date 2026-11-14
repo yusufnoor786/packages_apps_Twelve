@@ -73,7 +73,16 @@
             app:entryValues="@array/online_audio_quality_values"
             app:iconSpaceReserved="false"
             app:key="online_audio_quality"
-            app:title="@string/online_audio_quality"
+            app:title="@string/online_audio_quality_wifi"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            app:defaultValue="MEDIUM"
+            app:entries="@array/online_audio_quality_entries"
+            app:entryValues="@array/online_audio_quality_values"
+            app:iconSpaceReserved="false"
+            app:key="online_audio_quality_mobile"
+            app:title="@string/online_audio_quality_mobile"
             app:useSimpleSummaryProvider="true" />
 
         <MultiSelectListPreference

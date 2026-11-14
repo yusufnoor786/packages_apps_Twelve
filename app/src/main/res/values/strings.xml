@@ -354,6 +354,8 @@
     <string name="online_languages">Languages</string>
     <string name="online_header">Online</string>
     <string name="online_audio_quality">Streaming quality</string>
+    <string name="online_audio_quality_wifi">Streaming quality on Wi-Fi</string>
+    <string name="online_audio_quality_mobile">Streaming quality on mobile data</string>
     <string name="online_languages_summary">Languages used for trending songs and recommendations</string>
     <string name="online_activity_trending_songs">Trending songs</string>
     <string name="online_activity_new_trending">Hot right now</string>

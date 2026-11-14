@@ -175,4 +175,16 @@ class SaavnParserTest {
         assertNull(LyricsClient.parsePlain("  \n "))
         assertEquals(2, LyricsClient.parsePlain("a\nb")!!.lines.size)
     }
+
+    @Test
+    fun mobileDataHasItsOwnCeiling() {
+        val high = SaavnStream.Quality.HIGH
+        val medium = SaavnStream.Quality.MEDIUM
+        val low = SaavnStream.Quality.LOW
+
+        assertEquals(high, SaavnStream.Quality.forNetwork(high, medium, metered = false))
+        assertEquals(medium, SaavnStream.Quality.forNetwork(high, medium, metered = true))
+        // Mobile data is never better than what Wi-Fi is allowed
+        assertEquals(low, SaavnStream.Quality.forNetwork(low, high, metered = true))
+    }
 }
