@@ -63,6 +63,8 @@
         android:stateListAnimator="@null"
         android:tooltipText="@string/play_all"
         app:elevation="0dp"
+        app:fabCustomSize="72dp"
+        app:maxImageSize="36dp"
         app:materialThemeOverlay="@style/ThemeOverlay.Material3Expressive.FloatingActionButton.Tertiary"
         app:pressedTranslationZ="0dp"
         app:srcCompat="@drawable/ic_play_arrow" />

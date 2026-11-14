@@ -36,7 +36,8 @@
                     android:layout_marginBottom="18dp"
                     android:paddingHorizontal="16dp"
                     android:text="@string/genre_appears_in_albums_header"
-                    android:textAppearance="?attr/textAppearanceTitleLarge" />
+                    android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                    android:textStyle="bold" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/appearsInAlbumsRecyclerView"
@@ -66,7 +67,8 @@
                     android:layout_marginBottom="18dp"
                     android:paddingHorizontal="16dp"
                     android:text="@string/genre_appears_in_playlists_header"
-                    android:textAppearance="?attr/textAppearanceTitleLarge" />
+                    android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                    android:textStyle="bold" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/appearsInPlaylistsRecyclerView"
@@ -96,7 +98,8 @@
                     android:layout_marginBottom="18dp"
                     android:paddingHorizontal="16dp"
                     android:text="@string/genre_audios_header"
-                    android:textAppearance="?attr/textAppearanceTitleLarge" />
+                    android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                    android:textStyle="bold" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/audiosRecyclerView"

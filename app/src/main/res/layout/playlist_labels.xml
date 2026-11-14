@@ -14,7 +14,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:textAppearance="?attr/textAppearanceHeadlineMedium"
+        android:textAppearance="?attr/textAppearanceDisplaySmall"
+        android:textStyle="bold"
         tools:text="Eyes shut, mouth still" />
 
     <TextView

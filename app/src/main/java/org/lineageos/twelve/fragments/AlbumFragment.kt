@@ -90,6 +90,7 @@ class AlbumFragment : CollapsingToolbarLayoutFragment(R.layout.fragment_album) {
 
             override fun ViewHolder.onPrepareView() {
                 view.setLeadingView(R.layout.audio_track_index)
+                view.setExpressiveCard()
             }
 
             override fun ViewHolder.onBindView(item: AlbumViewModel.AlbumContent) {
