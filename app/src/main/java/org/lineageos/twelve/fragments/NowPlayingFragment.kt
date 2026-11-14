@@ -13,6 +13,8 @@ import android.media.audiofx.AudioEffect
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
+import android.view.Choreographer
 import android.util.Log
 import android.util.TypedValue
 import android.view.MotionEvent
@@ -176,6 +178,47 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         }
     }
     private var lyricsCurrentIndex: Int? = null
+
+    // Playback position is only read a few times a second, the lyrics need it every frame
+    private var lyricsAnchorPositionMs = 0L
+    private var lyricsAnchorUptimeMs = 0L
+    private var lyricsIsPlaying = false
+    private var lyricsSpeed = 1f
+    private var isLyricsFrameLoopRunning = false
+
+    private val lyricsFrameCallback = object : Choreographer.FrameCallback {
+        override fun doFrame(frameTimeNanos: Long) {
+            if (!isLyricsFrameLoopRunning) {
+                return
+            }
+
+            val elapsed = when (lyricsIsPlaying) {
+                true -> ((SystemClock.uptimeMillis() - lyricsAnchorUptimeMs) * lyricsSpeed).toLong()
+                false -> 0L
+            }
+            lyricsAdapter.setPosition(lyricsAnchorPositionMs + elapsed)
+
+            Choreographer.getInstance().postFrameCallback(this)
+        }
+    }
+
+    private fun updateLyricsFrameLoop() {
+        val shouldRun = mode == Mode.LYRICS && hasLyrics && isResumed
+        if (shouldRun == isLyricsFrameLoopRunning) {
+            return
+        }
+
+        isLyricsFrameLoopRunning = shouldRun
+        when (shouldRun) {
+            true -> Choreographer.getInstance().postFrameCallback(lyricsFrameCallback)
+            false -> Choreographer.getInstance().removeFrameCallback(lyricsFrameCallback)
+        }
+    }
+
+    private fun anchorLyricsPosition(positionMs: Long) {
+        lyricsAnchorPositionMs = positionMs
+        lyricsAnchorUptimeMs = SystemClock.uptimeMillis()
+    }
     private var lastCenteredLyricsIndex = -1
     private var isLyricsFollowing = true
     private val handler = Handler(Looper.getMainLooper())
@@ -800,6 +843,31 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
                 }
 
                 launch {
+                    viewModel.durationCurrentPositionMs.collect { (_, positionMs) ->
+                        positionMs?.let { anchorLyricsPosition(it) }
+                    }
+                }
+
+                launch {
+                    viewModel.isPlaying.collect {
+                        // Keep the position where it is while paused
+                        if (lyricsIsPlaying) {
+                            anchorLyricsPosition(
+                                lyricsAnchorPositionMs +
+                                        ((SystemClock.uptimeMillis() - lyricsAnchorUptimeMs) *
+                                                lyricsSpeed).toLong()
+                            )
+                        }
+                        lyricsIsPlaying = it
+                        anchorLyricsPosition(lyricsAnchorPositionMs)
+                    }
+                }
+
+                launch {
+                    viewModel.playbackParameters.collect { lyricsSpeed = it.speed }
+                }
+
+                launch {
                     viewModel.lyricsLines.collectLatest {
                         when (it) {
                             is FlowResult.Loading -> {
@@ -850,12 +918,16 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
 
     override fun onResume() {
         super.onResume()
+        updateLyricsFrameLoop()
         if (isVisualizerStarted) {
             visualizerManager.resume()
         }
     }
 
     override fun onPause() {
+        isLyricsFrameLoopRunning = false
+        Choreographer.getInstance().removeFrameCallback(lyricsFrameCallback)
+
         if (isVisualizerStarted) {
             visualizerManager.pause()
         }
@@ -864,6 +936,8 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
     }
 
     override fun onDestroyView() {
+        isLyricsFrameLoopRunning = false
+        Choreographer.getInstance().removeFrameCallback(lyricsFrameCallback)
         handler.removeCallbacks(resumeLyricsFollowing)
         lyricsRecyclerView?.adapter = null
         queueItemTouchHelper.attachToRecyclerView(null)
@@ -1025,6 +1099,7 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         nextLyricsTextView?.text = lines.getOrNull(index + 1)?.text
 
         lyricsAdapter.submit(lines, focusIndex)
+        updateLyricsFrameLoop()
         centerCurrentLyricsLine(animate = true)
     }
 
@@ -1118,6 +1193,7 @@ class NowPlayingFragment : Fragment(R.layout.fragment_now_playing) {
         lyricsToggleMaterialButton.isChecked = mode == Mode.LYRICS
         queueMaterialButton.isChecked = mode == Mode.QUEUE
         modeBackPressedCallback.isEnabled = mode != Mode.PLAYER
+        updateLyricsFrameLoop()
     }
 
     /**

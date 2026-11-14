@@ -369,8 +369,9 @@ open class NowPlayingViewModel(application: Application) : TwelveViewModel(appli
                         }
                     } ?: LyricsLineState.UNKNOWN
 
-                    if (lyricsLineState == LyricsLineState.ACTIVE
-                        || lyricsLineState == LyricsLineState.PAST
+                    // Background vocals accompany a line, they don't move the focus
+                    if (!line.isBackground && (lyricsLineState == LyricsLineState.ACTIVE
+                                || lyricsLineState == LyricsLineState.PAST)
                     ) {
                         currentIndex = i
                     }

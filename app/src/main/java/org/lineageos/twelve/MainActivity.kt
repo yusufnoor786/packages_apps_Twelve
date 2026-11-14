@@ -9,7 +9,12 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.graphics.Bitmap
+import android.os.Handler
+import android.os.Looper
+import android.view.PixelCopy
 import android.widget.FrameLayout
+import android.widget.ImageView
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -55,6 +60,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     // Views
     private val frameLayout by lazy { findViewById<FrameLayout>(R.id.linearLayout) }
+    private val homeSnapshotImageView by lazy { findViewById<ImageView>(R.id.homeSnapshotImageView) }
     private val nowPlayingBar by lazy { findViewById<NowPlayingBar>(R.id.nowPlayingBar) }
 
     // NavController
@@ -110,8 +116,25 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         frameLayout.viewTreeObserver.addOnGlobalLayoutListener {
             updateNowPlayingBarPlacement()
         }
-        navController.addOnDestinationChangedListener { _, _, _ ->
+        navController.addOnDestinationChangedListener { _, destination, _ ->
             frameLayout.post { updateNowPlayingBarPlacement() }
+
+            // The screen below the player is rebuilt when it is closed, keep showing it meanwhile
+            if (destination.id !in nowPlayingRelatedRouteIds && homeSnapshotImageView.isVisible) {
+                // Covers the screen while it is rebuilt
+                homeSnapshotImageView.bringToFront()
+
+                frameLayout.postDelayed({
+                    if (navController.currentDestination?.id !in nowPlayingRelatedRouteIds) {
+                        homeSnapshotImageView.isVisible = false
+                        homeSnapshotImageView.setImageDrawable(null)
+
+                        // Back below everything, where the next player slides over it
+                        frameLayout.removeView(homeSnapshotImageView)
+                        frameLayout.addView(homeSnapshotImageView, 0)
+                    }
+                }, HOME_SNAPSHOT_HIDE_DELAY_MS)
+            }
         }
 
         // Intents
@@ -348,16 +371,51 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         }
     }
 
-    private fun navigateToNowPlayingFragment() = navController.navigate(
-        R.id.fragment_now_playing,
-        null,
-        NavOptions.Builder()
-            .setPopUpTo(R.id.fragment_now_playing, true)
-            .build(),
-    )
+    private var isOpeningNowPlaying = false
+
+    private fun navigateToNowPlayingFragment() {
+        if (isOpeningNowPlaying) {
+            return
+        }
+        isOpeningNowPlaying = true
+
+        // Copied from the window before the player covers the screen, images that live on the
+        // GPU can't be drawn any other way
+        val width = frameLayout.width
+        val height = frameLayout.height
+        if (width <= 0 || height <= 0) {
+            openNowPlaying()
+            return
+        }
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        runCatching {
+            PixelCopy.request(window, bitmap, { result ->
+                if (result == PixelCopy.SUCCESS) {
+                    homeSnapshotImageView.setImageBitmap(bitmap)
+                    homeSnapshotImageView.isVisible = true
+                }
+                openNowPlaying()
+            }, Handler(Looper.getMainLooper()))
+        }.onFailure { openNowPlaying() }
+    }
+
+    private fun openNowPlaying() {
+        isOpeningNowPlaying = false
+
+        navController.navigate(
+            R.id.fragment_now_playing,
+            null,
+            NavOptions.Builder()
+                .setPopUpTo(R.id.fragment_now_playing, true)
+                .build(),
+        )
+    }
 
     companion object {
         private val LOG_TAG = MainActivity::class.simpleName!!
+
+        private const val HOME_SNAPSHOT_HIDE_DELAY_MS = 650L
 
         /**
          * Now playing related route IDs.

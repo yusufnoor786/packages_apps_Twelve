@@ -110,6 +110,8 @@ class SwipeToDismissLayout @JvmOverloads constructor(
 
             MotionEvent.ACTION_UP -> {
                 if (dragging) {
+                    // The finger may have moved since the last move event
+                    applyOffset((ev.y - dragStartY).coerceAtLeast(0f))
                     velocityTracker?.addMovement(ev)
                     velocityTracker?.computeCurrentVelocity(1000)
                     release(velocityTracker?.yVelocity ?: 0f)

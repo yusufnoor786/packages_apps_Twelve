@@ -10,11 +10,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.PathInterpolator
-import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import org.lineageos.twelve.R
 import org.lineageos.twelve.ext.blur
 import org.lineageos.twelve.models.Lyrics
+import org.lineageos.twelve.ui.views.LyricLineView
 import kotlin.math.abs
 
 /**
@@ -26,7 +26,7 @@ import kotlin.math.abs
 class LyricsAdapter(
     private val onLineClick: (Lyrics.Line) -> Unit,
 ) : RecyclerView.Adapter<LyricsAdapter.ViewHolder>() {
-    class ViewHolder(val textView: TextView) : RecyclerView.ViewHolder(textView) {
+    class ViewHolder(val textView: LyricLineView) : RecyclerView.ViewHolder(textView) {
         var animator: ValueAnimator? = null
 
         /**
@@ -47,6 +47,18 @@ class LyricsAdapter(
      */
     private var activeIndex: Int? = null
 
+    private var positionMs = -1L
+    private val attached = mutableSetOf<ViewHolder>()
+
+    /**
+     * Playback position, words of the line being sung are filled as it advances. Meant to be
+     * called every frame.
+     */
+    fun setPosition(newPositionMs: Long) {
+        positionMs = newPositionMs
+        attached.forEach { it.textView.setPosition(newPositionMs) }
+    }
+
     fun submit(newLines: List<Lyrics.Line>, newActiveIndex: Int?) {
         val sameLines = newLines.size == lines.size
                 && newLines.indices.all { newLines[it].text == lines[it].text }
@@ -64,13 +76,23 @@ class LyricsAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(
         LayoutInflater.from(parent.context)
-            .inflate(R.layout.lyrics_line, parent, false) as TextView
+            .inflate(R.layout.lyrics_line, parent, false) as LyricLineView
     )
+
+    override fun onViewAttachedToWindow(holder: ViewHolder) {
+        attached.add(holder)
+        holder.textView.setPosition(positionMs)
+    }
+
+    override fun onViewDetachedFromWindow(holder: ViewHolder) {
+        attached.remove(holder)
+    }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val line = lines[position]
 
-        holder.textView.text = line.text
+        holder.textView.setLine(line)
+        holder.textView.setPosition(positionMs)
         holder.textView.setOnClickListener { onLineClick(line) }
         holder.textView.isClickable = line.durationMs != null
 
@@ -90,7 +112,7 @@ class LyricsAdapter(
             return
         }
 
-        holder.textView.text = lines[position].text
+        holder.textView.setLine(lines[position])
 
         val fromFocus = holder.focus
         val fromBlur = holder.blurRadius
@@ -124,19 +146,29 @@ class LyricsAdapter(
      */
     private fun targetFocus(position: Int) = when (val active = activeIndex) {
         null -> UNSYNCED_FOCUS
-        else -> when (abs(position - active)) {
-            0 -> 1f
+        else -> when {
+            position == active -> 1f
+            isSungNow(position) -> 1f
             else -> 0f
         }
     }
 
+    /**
+     * Background vocals light up while they are sung, next to the line they accompany.
+     */
+    private fun isSungNow(position: Int): Boolean {
+        val line = lines[position]
+        val range = line.durationMs ?: return false
+
+        return line.isBackground && positionMs in range
+    }
+
     private fun targetBlur(position: Int) = when (val active = activeIndex) {
         null -> 0f
-        else -> (abs(position - active) * BLUR_PER_LINE).coerceAtMost(MAX_BLUR) *
-                when (position == active) {
-                    true -> 0f
-                    false -> 1f
-                }
+        else -> when {
+            position == active || isSungNow(position) -> 0f
+            else -> (abs(position - active) * BLUR_PER_LINE).coerceAtMost(MAX_BLUR)
+        }
     }
 
     private fun render(holder: ViewHolder) {
@@ -145,7 +177,10 @@ class LyricsAdapter(
 
         view.alpha = INACTIVE_ALPHA + (1f - INACTIVE_ALPHA) * focus
         val scale = INACTIVE_SCALE + (1f - INACTIVE_SCALE) * focus
-        view.pivotX = 0f
+        view.pivotX = when (holder.textView.line?.isOpposite) {
+            true -> view.width.toFloat()
+            else -> 0f
+        }
         view.pivotY = view.height / 2f
         view.scaleX = scale
         view.scaleY = scale

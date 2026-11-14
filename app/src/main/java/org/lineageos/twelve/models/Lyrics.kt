@@ -23,6 +23,19 @@ data class Lyrics(
     data class Line(
         val text: String,
         val durationMs: LongRange?,
+        val words: List<Word> = emptyList(),
+        val isBackground: Boolean = false,
+        val isOpposite: Boolean = false,
+    )
+
+    /**
+     * A word (or syllable) of a line that is sung between [startMs] and [endMs]. The text of the
+     * line is the concatenation of the text of its words, so spaces belong to the words.
+     */
+    data class Word(
+        val text: String,
+        val startMs: Long,
+        val endMs: Long,
     )
 
     class Builder {

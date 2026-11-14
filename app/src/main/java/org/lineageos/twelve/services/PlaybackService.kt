@@ -238,12 +238,17 @@ class PlaybackService : MediaLibraryService() {
     }
 
     /**
-     * The song AutoPlay last asked suggestions for. A single queue change fires several player
-     * callbacks, this makes sure they result in a single request.
+     * The last song of the queue AutoPlay found nothing new for, asking again would be pointless.
      */
-    private var autoplaySeedId: String? = null
+    private var autoplayExhaustedSeedId: String? = null
     private var autoplayJob: Job? = null
 
+    private fun upcomingCount() = player.mediaItemCount - player.currentMediaItemIndex - 1
+
+    /**
+     * Keeps a long queue of similar songs ahead of the one that is playing: when it runs short
+     * the suggestions for its last song are appended, until enough songs are waiting.
+     */
     private fun loadAutoplay() {
         if (!sharedPreferences.autoplay) {
             return
@@ -254,39 +259,46 @@ class PlaybackService : MediaLibraryService() {
             return
         }
 
-        val seed = player.currentMediaItem?.mediaId ?: return
-        if (player.hasNextMediaItem() || seed == autoplaySeedId) {
+        if (player.mediaItemCount == 0 || upcomingCount() >= AUTOPLAY_REFILL_BELOW) {
             return
         }
 
-        autoplaySeedId = seed
-        autoplayJob?.cancel()
+        val firstSeed = player.getMediaItemAt(player.mediaItemCount - 1).mediaId
+        if (autoplayJob?.isActive == true || firstSeed == autoplayExhaustedSeedId) {
+            return
+        }
+
         autoplayJob = lifecycleScope.launch {
-            val suggestions = when (
-                val result = mediaRepository.suggestions(seed.toUri(), AUTOPLAY_BATCH_SIZE)
-            ) {
-                is Result.Success -> result.data
-                is Result.Failure -> {
-                    // Let the next callback try again
-                    autoplaySeedId = null
+            var seed = firstSeed
+
+            repeat(AUTOPLAY_MAX_ROUNDS) {
+                if (upcomingCount() >= AUTOPLAY_TARGET) {
                     return@launch
                 }
+
+                val suggestions = when (
+                    val result = mediaRepository.suggestions(seed.toUri(), AUTOPLAY_BATCH_SIZE)
+                ) {
+                    is Result.Success -> result.data
+                    is Result.Failure -> return@launch
+                }
+
+                val queued = (0 until player.mediaItemCount)
+                    .map { player.getMediaItemAt(it).mediaId }
+                    .toSet()
+
+                val items = suggestions
+                    .filter { it.playbackUri != null && it.uri.toString() !in queued }
+                    .map { it.toMedia3MediaItem(resources) }
+
+                if (items.isEmpty()) {
+                    autoplayExhaustedSeedId = firstSeed
+                    return@launch
+                }
+
+                player.addMediaItems(items)
+                seed = items.last().mediaId
             }
-
-            // The user moved on while we were waiting
-            if (player.currentMediaItem?.mediaId != seed || player.hasNextMediaItem()) {
-                return@launch
-            }
-
-            val queued = (0 until player.mediaItemCount)
-                .map { player.getMediaItemAt(it).mediaId }
-                .toSet()
-
-            suggestions
-                .filter { it.playbackUri != null && it.uri.toString() !in queued }
-                .map { it.toMedia3MediaItem(resources) }
-                .takeIf { it.isNotEmpty() }
-                ?.let { player.addMediaItems(it) }
         }
     }
 
@@ -796,7 +808,10 @@ class PlaybackService : MediaLibraryService() {
     companion object {
         private val LOG_TAG = PlaybackService::class.simpleName!!
 
-        private const val AUTOPLAY_BATCH_SIZE = 10
+        private const val AUTOPLAY_BATCH_SIZE = 20
+        private const val AUTOPLAY_TARGET = 24
+        private const val AUTOPLAY_REFILL_BELOW = 10
+        private const val AUTOPLAY_MAX_ROUNDS = 4
 
         private const val BUFFER_FOR_PLAYBACK_MS = 4_000
         private const val BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS = 8_000

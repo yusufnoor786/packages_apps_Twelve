@@ -3,12 +3,6 @@
      SPDX-FileCopyrightText: The LineageOS Project
      SPDX-License-Identifier: Apache-2.0
 -->
-<com.google.android.material.textview.MaterialTextView xmlns:android="http://schemas.android.com/apk/res/android"
+<org.lineageos.twelve.ui.views.LyricLineView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:gravity="start|center_vertical"
-    android:paddingHorizontal="28dp"
-    android:paddingVertical="14dp"
-    android:textAppearance="?attr/textAppearanceHeadlineLarge"
-    android:textColor="?attr/colorOnSurface"
-    android:textStyle="bold" />
+    android:layout_height="wrap_content" />
