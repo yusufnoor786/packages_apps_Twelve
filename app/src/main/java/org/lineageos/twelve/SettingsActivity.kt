@@ -9,6 +9,8 @@ import android.os.Bundle
 import com.google.android.material.color.MaterialColors
 import androidx.recyclerview.widget.RecyclerView
 import androidx.preference.PreferenceGroupAdapter
+import androidx.preference.PreferenceViewHolder
+import androidx.preference.PreferenceScreen
 import androidx.preference.PreferenceCategory
 import android.widget.TextView
 import android.graphics.drawable.RippleDrawable
@@ -133,6 +135,34 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
             setPreferencesFromResource(preferencesResId, rootKey)
         }
 
+        /**
+         * Every row is styled each time it is bound: binding puts the original background back
+         * (a toggled switch rebinds its row), and the row is clipped to its background, so a row
+         * styled only once would vanish.
+         */
+        @SuppressLint("RestrictedApi")
+        override fun onCreateAdapter(
+            preferenceScreen: PreferenceScreen,
+        ): RecyclerView.Adapter<*> = object : PreferenceGroupAdapter(preferenceScreen) {
+            override fun onBindViewHolder(holder: PreferenceViewHolder, position: Int) {
+                super.onBindViewHolder(holder, position)
+
+                // Settings between two categories are one connected group
+                fun breaksGroup(at: Int) = at !in 0 until itemCount ||
+                        getItem(at) is PreferenceCategory
+
+                when (getItem(position)) {
+                    null -> Unit
+                    is PreferenceCategory -> styleCategory(holder.itemView)
+                    else -> styleRow(
+                        holder.itemView,
+                        isFirst = breaksGroup(position - 1),
+                        isLast = breaksGroup(position + 1),
+                    )
+                }
+            }
+        }
+
         @CallSuper
         override fun onCreateRecyclerView(
             inflater: LayoutInflater,
@@ -141,31 +171,6 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
         ) = super.onCreateRecyclerView(inflater, parent, savedInstanceState).apply {
             clipToPadding = false
             isVerticalScrollBarEnabled = false
-
-            addOnChildAttachStateChangeListener(object : RecyclerView.OnChildAttachStateChangeListener {
-                @SuppressLint("RestrictedApi")
-                override fun onChildViewAttachedToWindow(view: View) {
-                    val position = getChildAdapterPosition(view)
-                    val groupAdapter = adapter as? PreferenceGroupAdapter ?: return
-                    val preference = groupAdapter.getItem(position)
-
-                    // Settings between two categories are one connected group
-                    fun breaksGroup(at: Int) = at !in 0 until groupAdapter.itemCount ||
-                            groupAdapter.getItem(at) is PreferenceCategory
-
-                    when (preference) {
-                        null -> Unit
-                        is PreferenceCategory -> styleCategory(view)
-                        else -> styleRow(
-                            view,
-                            isFirst = breaksGroup(position - 1),
-                            isLast = breaksGroup(position + 1),
-                        )
-                    }
-                }
-
-                override fun onChildViewDetachedFromWindow(view: View) = Unit
-            })
 
             ViewCompat.setOnApplyWindowInsetsListener(this) { _, windowInsets ->
                 val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
