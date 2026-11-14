@@ -58,7 +58,6 @@ class ActivityTabView(context: Context) : FrameLayout(context) {
     init {
         inflate(context, R.layout.view_activity_tab, this)
 
-        recyclerView.setItemViewCacheSize(8)
     }
 
     private fun adapterFor(style: Style) = adapters.getOrPut(style) {

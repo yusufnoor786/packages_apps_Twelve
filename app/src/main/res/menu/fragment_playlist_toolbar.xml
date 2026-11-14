@@ -16,11 +16,9 @@
 
     <item
         android:id="@+id/deletePlaylist"
-        android:icon="@drawable/ic_playlist_remove"
         android:title="@string/delete_playlist"
         android:visible="false"
-        app:iconTint="?attr/colorOnSurface"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/sharePlaylist"

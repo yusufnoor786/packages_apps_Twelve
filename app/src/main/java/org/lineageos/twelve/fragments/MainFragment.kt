@@ -76,6 +76,9 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     private val playRandomSongsButton by getViewProperty<MaterialButton>(R.id.playRandomSongsButton)
     private val providerMaterialButton by getViewProperty<MaterialButton>(R.id.providerMaterialButton)
     private val refreshMaterialButton by getViewProperty<MaterialButton>(R.id.refreshMaterialButton)
+    private val importMaterialButton by getViewProperty<MaterialButton>(R.id.importMaterialButton)
+
+    private val playlistImporter = PlaylistImporter(this) { viewModel }
     private val searchLinearProgressIndicator by getViewProperty<LinearProgressIndicator>(R.id.searchLinearProgressIndicator)
     private val searchNoElementsLinearLayout by getViewProperty<LinearLayout>(R.id.searchNoElementsLinearLayout)
     private val searchRecyclerView by getViewProperty<RecyclerView>(R.id.searchRecyclerView)
@@ -358,6 +361,10 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             }
         }
 
+        importMaterialButton.setOnClickListener {
+            playlistImporter.showDialog()
+        }
+
         refreshMaterialButton.setOnClickListener {
             viewModel.refreshOnline()
         }
@@ -385,7 +392,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             override fun getItemCount() = Page.entries.size
             override fun createFragment(position: Int) = Page.entries[position].createFragment()
         }
-        viewPager2.offscreenPageLimit = Page.entries.size
+        viewPager2.offscreenPageLimit = 1
 
         navigationBarView.setOnItemSelectedListener { item ->
             if (item.itemId == R.id.searchFragment) {
@@ -432,6 +439,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                         // The provider chooser is only meaningful for the offline sources
                         providerMaterialButton.isVisible = !onlineMode
                         refreshMaterialButton.isVisible = onlineMode
+                        importMaterialButton.isVisible = onlineMode
                     }
                 }
 

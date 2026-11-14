@@ -120,6 +120,14 @@
             app:leadingIconImage="@drawable/ic_favorite" />
 
         <org.lineageos.twelve.ui.views.ListItem
+            android:id="@+id/deletePlaylistListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:headlineText="@string/delete_playlist"
+            app:leadingIconImage="@drawable/ic_playlist_remove" />
+
+        <org.lineageos.twelve.ui.views.ListItem
             android:id="@+id/removeFromPlaylistListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -21,6 +21,7 @@ import coil3.load
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.lineageos.twelve.R
 import org.lineageos.twelve.ext.Bundle
 import org.lineageos.twelve.ext.getParcelable
@@ -66,6 +67,7 @@ class MediaItemBottomSheetDialogFragment : TwelveBottomSheetDialogFragment(
     private val playNowListItem by getViewProperty<ListItem>(R.id.playNowListItem)
     private val playNextListItem by getViewProperty<ListItem>(R.id.playNextListItem)
     private val removeFromPlaylistListItem by getViewProperty<ListItem>(R.id.removeFromPlaylistListItem)
+    private val deletePlaylistListItem by getViewProperty<ListItem>(R.id.deletePlaylistListItem)
     private val thumbnailImageView by getViewProperty<ImageView>(R.id.thumbnailImageView)
     private val titleTextView by getViewProperty<TextView>(R.id.titleTextView)
 
@@ -146,6 +148,23 @@ class MediaItemBottomSheetDialogFragment : TwelveBottomSheetDialogFragment(
                     viewModel.toggleFavorites()
                 }
             }
+        }
+
+        deletePlaylistListItem.setOnClickListener {
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.delete_playlist)
+                .setMessage(R.string.delete_playlist_message)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    // The sheet goes away with the playlist, the scope must outlive it
+                    val viewModel = viewModel
+                    (requireActivity() as androidx.appcompat.app.AppCompatActivity)
+                        .lifecycleScope.launch {
+                            viewModel.deletePlaylist()
+                        }
+                    findNavController().navigateUp()
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
         }
 
         removeFromPlaylistListItem.setOnClickListener {
@@ -328,6 +347,12 @@ class MediaItemBottomSheetDialogFragment : TwelveBottomSheetDialogFragment(
         launch {
             viewModel.canAddOrRemoveFromPlaylists.collectLatest { canAddOrRemoveFromPlaylists ->
                 addOrRemoveFromPlaylistsListItem.isVisible = canAddOrRemoveFromPlaylists
+            }
+        }
+
+        launch {
+            viewModel.isDeletablePlaylist.collectLatest {
+                deletePlaylistListItem.isVisible = it
             }
         }
 

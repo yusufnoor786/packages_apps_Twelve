@@ -87,6 +87,31 @@ class MediaItemViewModel(application: Application) : TwelveViewModel(application
             initialValue = FlowResult.Loading,
         )
 
+    /**
+     * Whether the item is a playlist the user made, and can delete.
+     */
+    val isDeletablePlaylist = data
+        .foldLatest(
+            onSuccess = { (item, _) ->
+                item is Playlist && item.type == Playlist.Type.PLAYLIST
+            },
+            onError = { _, _ -> false },
+        )
+        .flowOn(Dispatchers.IO)
+        .stateIn(
+            viewModelScope,
+            started = SharingStarted.WhileSubscribed(),
+            initialValue = false,
+        )
+
+    suspend fun deletePlaylist() {
+        uri.value?.let { playlistUri ->
+            withContext(Dispatchers.IO) {
+                mediaRepository.deletePlaylist(playlistUri)
+            }
+        }
+    }
+
     val mediaItem = data
         .mapLatestData { it.first }
         .flowOn(Dispatchers.IO)
