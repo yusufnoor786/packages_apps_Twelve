@@ -4,5 +4,5 @@
      SPDX-License-Identifier: Apache-2.0
 -->
 <resources>
-    <dimen name="list_item_default_corner_radius">16dp</dimen>
+    <dimen name="list_item_default_corner_radius">24dp</dimen>
 </resources>

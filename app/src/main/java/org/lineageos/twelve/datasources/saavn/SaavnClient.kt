@@ -86,16 +86,52 @@ class SaavnClient(
         "content.getTrending", "entity_type" to type, "entity_language" to language
     )
 
+    /**
+     * Songs similar to the given one. The catalog builds a "station" around the song and then
+     * serves its next tracks.
+     */
+    suspend fun suggestions(songId: String, count: Int = 10): Result<JsonElement, Error> {
+        val station = request(
+            "webradio.createEntityStation",
+            context = CONTEXT_ANDROID,
+            params = arrayOf(
+                "entity_id" to "[\"$songId\"]",
+                "entity_type" to "queue",
+            ),
+        )
+
+        val stationId = ((station as? Result.Success)?.data as? JsonObject)
+            ?.get("stationid")
+            ?.let { it as? kotlinx.serialization.json.JsonPrimitive }
+            ?.content
+            ?: return Result.Failure(Error.NOT_FOUND)
+
+        return request(
+            "webradio.getSong",
+            context = CONTEXT_ANDROID,
+            params = arrayOf(
+                "stationid" to stationId,
+                "k" to count,
+            ),
+        )
+    }
+
     private suspend fun request(
         method: String,
         vararg params: Pair<String, Any>,
+    ) = request(method, CONTEXT_WEB, arrayOf(*params))
+
+    private suspend fun request(
+        method: String,
+        context: String,
+        params: Array<out Pair<String, Any>>,
     ): Result<JsonElement, Error> {
         val url = BASE_URL.toHttpUrl().newBuilder()
             .addQueryParameter("__call", method)
             .addQueryParameter("_format", "json")
             .addQueryParameter("_marker", "0")
             .addQueryParameter("api_version", "4")
-            .addQueryParameter("ctx", "web6dot0")
+            .addQueryParameter("ctx", context)
             .apply {
                 params.forEach { (key, value) -> addQueryParameter(key, value.toString()) }
             }
@@ -142,6 +178,8 @@ class SaavnClient(
     }
 
     companion object {
+        private const val CONTEXT_WEB = "web6dot0"
+        private const val CONTEXT_ANDROID = "android"
         private const val CACHE_SIZE = 80
         private const val CACHE_TTL_MS = 5 * 60 * 1000L
         private const val BASE_URL = "https://www.jiosaavn.com/api.php"

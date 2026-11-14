@@ -20,6 +20,7 @@ import androidx.media3.common.HeartRating
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.Rating
+import androidx.media3.common.Timeline
 import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.listen
 import androidx.media3.common.util.ExperimentalApi
@@ -40,6 +41,7 @@ import androidx.media3.session.SessionResult
 import androidx.preference.PreferenceManager
 import com.google.common.util.concurrent.Futures
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.launch
@@ -48,6 +50,7 @@ import org.lineageos.twelve.MainActivity
 import org.lineageos.twelve.R
 import org.lineageos.twelve.TwelveApplication
 import org.lineageos.twelve.ext.Bundle
+import org.lineageos.twelve.ext.autoplay
 import org.lineageos.twelve.ext.enableFloatOutput
 import org.lineageos.twelve.ext.enableOffload
 import org.lineageos.twelve.ext.mapAsync
@@ -57,6 +60,7 @@ import org.lineageos.twelve.ext.skipSilence
 import org.lineageos.twelve.ext.stopPlaybackOnTaskRemoved
 import org.lineageos.twelve.ext.typedRepeatMode
 import org.lineageos.twelve.models.RepeatMode
+import org.lineageos.twelve.models.Result
 import org.lineageos.twelve.ui.widgets.NowPlayingAppWidgetProvider
 
 @OptIn(UnstableApi::class)
@@ -219,6 +223,70 @@ class PlaybackService : MediaLibraryService() {
                     )
                 }
             }
+        }
+    }
+
+    /**
+     * AutoPlay: when the last song of the queue is playing, keep it going with similar songs.
+     */
+    private val autoplayListener = object : Player.Listener {
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) = loadAutoplay()
+
+        override fun onTimelineChanged(timeline: Timeline, reason: Int) = loadAutoplay()
+
+        override fun onRepeatModeChanged(repeatMode: Int) = loadAutoplay()
+    }
+
+    /**
+     * The song AutoPlay last asked suggestions for. A single queue change fires several player
+     * callbacks, this makes sure they result in a single request.
+     */
+    private var autoplaySeedId: String? = null
+    private var autoplayJob: Job? = null
+
+    private fun loadAutoplay() {
+        if (!sharedPreferences.autoplay) {
+            return
+        }
+
+        // Repeating the queue or the song is what the user asked for
+        if (player.repeatMode != Player.REPEAT_MODE_OFF) {
+            return
+        }
+
+        val seed = player.currentMediaItem?.mediaId ?: return
+        if (player.hasNextMediaItem() || seed == autoplaySeedId) {
+            return
+        }
+
+        autoplaySeedId = seed
+        autoplayJob?.cancel()
+        autoplayJob = lifecycleScope.launch {
+            val suggestions = when (
+                val result = mediaRepository.suggestions(seed.toUri(), AUTOPLAY_BATCH_SIZE)
+            ) {
+                is Result.Success -> result.data
+                is Result.Failure -> {
+                    // Let the next callback try again
+                    autoplaySeedId = null
+                    return@launch
+                }
+            }
+
+            // The user moved on while we were waiting
+            if (player.currentMediaItem?.mediaId != seed || player.hasNextMediaItem()) {
+                return@launch
+            }
+
+            val queued = (0 until player.mediaItemCount)
+                .map { player.getMediaItemAt(it).mediaId }
+                .toSet()
+
+            suggestions
+                .filter { it.playbackUri != null && it.uri.toString() !in queued }
+                .map { it.toMedia3MediaItem(resources) }
+                .takeIf { it.isNotEmpty() }
+                ?.let { player.addMediaItems(it) }
         }
     }
 
@@ -518,6 +586,7 @@ class PlaybackService : MediaLibraryService() {
         )
 
         player.addAnalyticsListener(analyticsListener)
+        player.addListener(autoplayListener)
 
         lifecycleScope.launch {
             player.listen { events ->
@@ -726,6 +795,8 @@ class PlaybackService : MediaLibraryService() {
 
     companion object {
         private val LOG_TAG = PlaybackService::class.simpleName!!
+
+        private const val AUTOPLAY_BATCH_SIZE = 10
 
         private const val BUFFER_FOR_PLAYBACK_MS = 4_000
         private const val BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS = 8_000

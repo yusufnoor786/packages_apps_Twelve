@@ -416,6 +416,13 @@ class MediaRepository(
         }
 
     /**
+     * @see MediaDataSource.suggestions
+     */
+    suspend fun suggestions(audioUri: Uri, limit: Int) = withMediaItemsDataSource(audioUri) {
+        suggestions(audioUri, limit)
+    }
+
+    /**
      * Get the [MediaDataSource] associated with the given [ProviderIdentifier].
      *
      * @param providerIdentifier The [ProviderIdentifier]

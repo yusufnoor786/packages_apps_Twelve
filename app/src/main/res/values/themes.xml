@@ -10,6 +10,66 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="enableEdgeToEdge">true</item>
         <item name="materialSwitchStyle">@style/Widget.SettingsLib.MaterialSwitch</item>
+
+        <!-- Material 3 Expressive: rounder shapes and wavy progress indicators -->
+        <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.Twelve.Corner.Small</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.Twelve.Corner.Medium</item>
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.Twelve.Corner.Large</item>
+        <item name="shapeAppearanceCornerExtraLarge">@style/ShapeAppearance.Twelve.Corner.ExtraLarge</item>
+        <item name="linearProgressIndicatorStyle">@style/Widget.Material3Expressive.LinearProgressIndicator.Wavy</item>
+        <item name="circularProgressIndicatorStyle">@style/Widget.Material3Expressive.CircularProgressIndicator.Wavy</item>
+    </style>
+
+    <style name="ShapeAppearance.Twelve.Corner.Small" parent="ShapeAppearance.Material3.Corner.Small">
+        <item name="cornerSize">12dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Twelve.Corner.Medium" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerSize">20dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Twelve.Corner.Large" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerSize">28dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Twelve.Corner.ExtraLarge" parent="ShapeAppearance.Material3.Corner.ExtraLarge">
+        <item name="cornerSize">36dp</item>
+    </style>
+
+    <!--
+         Glass look used by the screens drawn over the blurred artwork: translucent white
+         containers and white content, independent of the wallpaper colors.
+    -->
+    <style name="ThemeOverlay.Twelve.Player" parent="ThemeOverlay.Material3Expressive.Dark">
+        <item name="colorPrimary">#FFFFFF</item>
+        <item name="colorOnPrimary">#1B1B1F</item>
+        <item name="colorPrimaryContainer">#38FFFFFF</item>
+        <item name="colorOnPrimaryContainer">#FFFFFF</item>
+        <item name="colorSecondary">#E6FFFFFF</item>
+        <item name="colorOnSecondary">#1B1B1F</item>
+        <item name="colorSecondaryContainer">#2EFFFFFF</item>
+        <item name="colorOnSecondaryContainer">#FFFFFF</item>
+        <item name="colorTertiary">#FFFFFF</item>
+        <item name="colorOnTertiary">#1B1B1F</item>
+        <item name="colorTertiaryContainer">#40FFFFFF</item>
+        <item name="colorOnTertiaryContainer">#FFFFFF</item>
+        <item name="colorOnSurface">#FFFFFF</item>
+        <item name="colorOnSurfaceVariant">#B8FFFFFF</item>
+        <item name="colorSurfaceContainerHighest">#2EFFFFFF</item>
+        <item name="colorSurfaceContainerHigh">#26FFFFFF</item>
+        <item name="colorSurfaceContainer">#1FFFFFFF</item>
+        <item name="colorOutline">#66FFFFFF</item>
+        <item name="colorOutlineVariant">#33FFFFFF</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:textColorSecondary">#B8FFFFFF</item>
+    </style>
+
+    <!-- Full-width cover whose bottom corners are rounded -->
+    <style name="ShapeAppearanceOverlay.Twelve.CoverHero" parent="">
+        <item name="cornerSizeTopLeft">0dp</item>
+        <item name="cornerSizeTopRight">0dp</item>
+        <item name="cornerSizeBottomLeft">44dp</item>
+        <item name="cornerSizeBottomRight">44dp</item>
     </style>
 
     <!-- Base dialog theme -->
@@ -98,9 +158,11 @@
         <item name="tint">?attr/colorPrimary</item>
     </style>
 
-    <style name="Theme.Twelve.NowPlayingFragment.BottomBarButton" parent="Widget.Material3Expressive.Button.IconButton.Tonal">
-        <item name="android:layout_width">48dp</item>
-        <item name="android:layout_height">48dp</item>
+    <style name="Theme.Twelve.NowPlayingFragment.BottomBarButton" parent="Widget.Material3Expressive.Button.IconButton.Standard">
+        <item name="android:layout_width">46dp</item>
+        <item name="android:layout_height">46dp</item>
+        <item name="iconTint">?attr/colorOnSurface</item>
+        <item name="backgroundTint">@color/now_playing_bottom_button_background</item>
         <item name="android:layout_gravity">center</item>
         <item name="android:padding">0dp</item>
         <item name="android:insetLeft">0dp</item>

@@ -38,6 +38,13 @@
             app:title="@string/stop_playback_on_task_removed" />
 
         <SwitchPreference
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="autoplay"
+            app:summary="@string/autoplay_summary"
+            app:title="@string/autoplay" />
+
+        <SwitchPreference
             app:defaultValue="false"
             app:iconSpaceReserved="false"
             app:key="skip_silence"

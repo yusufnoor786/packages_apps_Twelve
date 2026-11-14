@@ -91,6 +91,11 @@ var SharedPreferences.defaultProvider: ProviderIdentifier?
         )
     }
 
+const val AUTOPLAY_KEY = "autoplay"
+private const val AUTOPLAY_DEFAULT = true
+val SharedPreferences.autoplay: Boolean
+    get() = getBoolean(AUTOPLAY_KEY, AUTOPLAY_DEFAULT)
+
 // Online prefs
 const val ONLINE_MODE_KEY = "online_mode"
 private const val ONLINE_MODE_DEFAULT = false

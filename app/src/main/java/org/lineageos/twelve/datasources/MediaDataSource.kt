@@ -231,4 +231,14 @@ interface MediaDataSource {
      * @return [Result.Success] if success, [Result.Failure] with an error otherwise
      */
     suspend fun setFavorite(audioUri: Uri, isFavorite: Boolean): MediaRequestStatus<Unit>
+
+    /**
+     * Get audios similar to the given one, used to keep the queue going once it ends.
+     * @param audioUri The URI of the audio
+     * @param limit The maximum amount of audios to return
+     * @return [Result.Success] with the suggestions, [Result.Failure] with
+     *   [Error.NOT_IMPLEMENTED] if this data source cannot suggest audios
+     */
+    suspend fun suggestions(audioUri: Uri, limit: Int): MediaRequestStatus<List<Audio>> =
+        Result.Failure(Error.NOT_IMPLEMENTED)
 }

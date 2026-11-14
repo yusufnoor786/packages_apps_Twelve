@@ -6,7 +6,9 @@
 <com.google.android.material.textview.MaterialTextView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:gravity="center"
-    android:padding="16dp"
-    android:textAppearance="?attr/textAppearanceDisplaySmall"
-    android:textColor="@color/lyrics_line" />
+    android:gravity="start|center_vertical"
+    android:paddingHorizontal="28dp"
+    android:paddingVertical="14dp"
+    android:textAppearance="?attr/textAppearanceHeadlineLarge"
+    android:textColor="?attr/colorOnSurface"
+    android:textStyle="bold" />

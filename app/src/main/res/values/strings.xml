@@ -205,6 +205,9 @@
     <string name="enable_float_output_summary">Use 32-bit PCM floating point output when the audio quality can benefit from it. Audio effects like speed and pitch controls will stop working in this mode. Toggling this option requires an app restart</string>
     <string name="stop_playback_on_task_removed">Stop playback on app\'s removal from recents</string>
     <string name="stop_playback_on_task_removed_summary">Stop playback when the app is cleared from recents</string>
+    <string name="more_options">More options</string>
+    <string name="autoplay">AutoPlay</string>
+    <string name="autoplay_summary">When the queue ends, keep playing similar songs. Works with online songs</string>
     <string name="skip_silence">Skip silence</string>
     <string name="skip_silence_summary">Skip silence when playing audio</string>
 

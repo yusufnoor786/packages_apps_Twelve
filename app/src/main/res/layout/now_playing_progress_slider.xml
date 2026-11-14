@@ -11,9 +11,10 @@
 
     <com.google.android.material.slider.Slider
         android:id="@+id/progressSlider"
+        style="@style/Widget.Material3Expressive.Slider.Xsmall"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
+        android:layout_marginHorizontal="16dp"
         android:valueFrom="0.0" />
 
     <LinearLayout
@@ -28,7 +29,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="?attr/textAppearanceLabelMedium"
-            android:textColor="?attr/colorOnSurface"
+            android:textColor="?attr/colorOnSurfaceVariant"
             tools:text="0:13" />
 
         <Space
@@ -41,7 +42,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="?attr/textAppearanceLabelMedium"
-            android:textColor="?attr/colorOnSurface"
+            android:textColor="?attr/colorOnSurfaceVariant"
             tools:text="1:16" />
 
     </LinearLayout>

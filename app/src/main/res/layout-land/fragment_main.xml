@@ -22,6 +22,8 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            app:titleTextAppearance="?attr/textAppearanceHeadlineMedium"
+            app:titleTextColor="?attr/colorOnSurface"
             tools:title="@string/app_name">
 
             <com.google.android.material.button.MaterialButton
@@ -54,6 +56,7 @@
             android:layout_marginTop="4dp"
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="8dp"
+            style="@style/Widget.Material3Expressive.MaterialButtonToggleGroup"
             android:contentDescription="@string/mode_switch_description"
             app:selectionRequired="true"
             app:singleSelection="true">
@@ -116,6 +119,7 @@
 
     <com.google.android.material.navigationrail.NavigationRailView
         android:id="@+id/navigationBarView"
+        style="@style/Widget.Material3Expressive.NavigationRailView"
         android:layout_width="wrap_content"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"

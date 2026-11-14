@@ -598,6 +598,24 @@ class SaavnDataSource(
         return Result.Success(Unit)
     }
 
+    override suspend fun suggestions(
+        audioUri: Uri,
+        limit: Int,
+    ): MediaRequestStatus<List<Audio>> {
+        val id = audioUri.lastPathSegment ?: return Result.Failure(Error.NOT_FOUND)
+        val favorites = store.favoritesIds.toSet()
+
+        return when (val response = client.suggestions(id, limit)) {
+            is Result.Success -> SaavnParser.suggestions(response.data)
+                .filter { it.id != id }
+                .onEach { songCache[it.id] = it }
+                .map { it.toAudio(favorites) }
+                .let { Result.Success(it) }
+
+            is Result.Failure -> response
+        }
+    }
+
     // Helpers
 
     /**

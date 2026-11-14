@@ -33,7 +33,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
-        android:spacing="4dp"
+        android:spacing="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -41,27 +41,33 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/previousTrackMaterialButton"
-            style="?attr/materialIconButtonFilledTonalStyle"
+            style="?attr/materialIconButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:icon="@drawable/ic_skip_previous"
-            app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Large.Narrow" />
+            app:iconSize="32dp"
+            app:iconTint="?attr/colorOnSurface"
+            app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Medium.Narrow" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/playPauseMaterialButton"
-            style="?attr/materialIconButtonFilledStyle"
+            style="?attr/materialIconButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:icon="@drawable/ic_play_arrow"
-            app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Large.Wide.Square" />
+            app:iconSize="56dp"
+            app:iconTint="?attr/colorOnSurface"
+            app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Large" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/nextTrackMaterialButton"
-            style="?attr/materialIconButtonFilledTonalStyle"
+            style="?attr/materialIconButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:icon="@drawable/ic_skip_next"
-            app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Large.Narrow" />
+            app:iconSize="32dp"
+            app:iconTint="?attr/colorOnSurface"
+            app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Medium.Narrow" />
 
     </com.google.android.material.button.MaterialButtonGroup>
 

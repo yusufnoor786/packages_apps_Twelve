@@ -8,7 +8,7 @@ package org.lineageos.twelve.fragments
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.TextView
+import android.widget.ImageView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
@@ -20,7 +20,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
@@ -28,13 +27,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.lineageos.twelve.R
+import org.lineageos.twelve.ext.applyBackdropEffects
 import org.lineageos.twelve.ext.getViewProperty
+import org.lineageos.twelve.ext.loadBackdrop
 import org.lineageos.twelve.ext.updateMargin
 import org.lineageos.twelve.ext.updatePadding
 import org.lineageos.twelve.models.FlowResult
 import org.lineageos.twelve.models.Lyrics
+import org.lineageos.twelve.models.Result
 import org.lineageos.twelve.ui.recyclerview.CenterSmoothScroller
-import org.lineageos.twelve.ui.recyclerview.SimpleListAdapter
+import org.lineageos.twelve.ui.recyclerview.LyricsAdapter
 import org.lineageos.twelve.viewmodels.LyricsViewModel
 import org.lineageos.twelve.viewmodels.NowPlayingViewModel
 
@@ -48,6 +50,7 @@ class LyricsFragment : Fragment(R.layout.fragment_lyrics) {
     private val viewModel by viewModels<LyricsViewModel>()
 
     // Views
+    private val backdropImageView by getViewProperty<ImageView>(R.id.backdropImageView)
     private val followCurrentLineExtendedFloatingActionButton by getViewProperty<ExtendedFloatingActionButton>(
         R.id.followCurrentLineExtendedFloatingActionButton
     )
@@ -57,22 +60,7 @@ class LyricsFragment : Fragment(R.layout.fragment_lyrics) {
 
     // RecyclerView
     private val adapter by lazy {
-        object : SimpleListAdapter<LineToState, TextView>(
-            diffCallback,
-            { layoutInflater.inflate(R.layout.lyrics_line, null, false) as TextView }
-        ) {
-            override fun ViewHolder.onBindView(item: LineToState) {
-                val (line, lineState) = item
-
-                view.text = line.text
-                view.isSelected = lineState == NowPlayingViewModel.LyricsLineState.ACTIVE
-                view.isActivated = lineState != NowPlayingViewModel.LyricsLineState.PAST
-
-                view.setOnClickListener {
-                    viewModel.seekToLine(line)
-                }
-            }
-        }
+        LyricsAdapter { line -> viewModel.seekToLine(line) }
     }
     private val scrollListener by lazy {
         object : RecyclerView.OnScrollListener() {
@@ -87,8 +75,12 @@ class LyricsFragment : Fragment(R.layout.fragment_lyrics) {
         }
     }
 
+    private var systemBarsBottomInset = 0
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        backdropImageView.applyBackdropEffects()
 
         // Insets
         ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, windowInsets ->
@@ -103,15 +95,21 @@ class LyricsFragment : Fragment(R.layout.fragment_lyrics) {
             windowInsets
         }
 
-        ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { v, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+        ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { _, windowInsets ->
+            systemBarsBottomInset = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars()
+            ).bottom
 
-            v.updatePadding(
-                insets,
-                bottom = true,
-            )
+            updateRecyclerViewPadding()
 
             windowInsets
+        }
+
+        // Leave room above the first line and below the last one so that any line can be centered
+        recyclerView.addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
+            if (bottom - top != oldBottom - oldTop) {
+                updateRecyclerViewPadding()
+            }
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(noElementsNestedScrollView) { v, windowInsets ->
@@ -161,7 +159,31 @@ class LyricsFragment : Fragment(R.layout.fragment_lyrics) {
         super.onDestroyView()
     }
 
+    private fun updateRecyclerViewPadding() {
+        val height = recyclerView.height.takeIf { it > 0 } ?: return
+
+        val top = height / 3
+        val bottom = height / 2 + systemBarsBottomInset
+
+        if (recyclerView.paddingTop != top || recyclerView.paddingBottom != bottom) {
+            recyclerView.setPadding(
+                recyclerView.paddingLeft,
+                top,
+                recyclerView.paddingRight,
+                bottom,
+            )
+        }
+    }
+
     private fun CoroutineScope.loadData() {
+        launch {
+            viewModel.mediaArtwork.collectLatest {
+                if (it is Result.Success) {
+                    backdropImageView.loadBackdrop(it.data)
+                }
+            }
+        }
+
         launch {
             viewModel.lyricsLines.collectLatest {
                 when (it) {
@@ -172,7 +194,8 @@ class LyricsFragment : Fragment(R.layout.fragment_lyrics) {
                     is FlowResult.Success -> {
                         val (lyricsWithState, currentIndex) = it.data
 
-                        adapter.submitList(lyricsWithState)
+                        adapter.submit(lyricsWithState.map { (line, _) -> line }, currentIndex)
+
                         currentIndex.takeIf { viewModel.positionSynced.value }?.let { index ->
                             CenterSmoothScroller(recyclerView.context).apply {
                                 targetPosition = index
@@ -194,7 +217,7 @@ class LyricsFragment : Fragment(R.layout.fragment_lyrics) {
                             it.throwable
                         )
 
-                        adapter.submitList(null)
+                        adapter.submit(emptyList(), null)
 
                         recyclerView.isVisible = false
                         noElementsNestedScrollView.isVisible = true
@@ -212,17 +235,5 @@ class LyricsFragment : Fragment(R.layout.fragment_lyrics) {
 
     companion object {
         private val LOG_TAG = LyricsFragment::class.simpleName!!
-
-        private val diffCallback = object : DiffUtil.ItemCallback<LineToState>() {
-            override fun areItemsTheSame(
-                oldItem: LineToState,
-                newItem: LineToState
-            ) = oldItem.first === newItem.first
-
-            override fun areContentsTheSame(
-                oldItem: LineToState,
-                newItem: LineToState
-            ) = oldItem.second == newItem.second
-        }
     }
 }

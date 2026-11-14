@@ -139,6 +139,15 @@ object SaavnParser {
         )
     }
 
+    /**
+     * Parse the songs of a station, they are keyed by their position.
+     */
+    fun suggestions(root: JsonElement): List<SaavnSong> = (root as? JsonObject)
+        ?.entries
+        ?.filter { it.key != "stationid" }
+        ?.mapNotNull { (_, value) -> ((value as? JsonObject)?.get("song") as? JsonObject)?.let(::song) }
+        .orEmpty()
+
     fun albumPage(root: JsonElement): SaavnAlbumPage? {
         val obj = root as? JsonObject ?: return null
         val album = album(obj) ?: return null
