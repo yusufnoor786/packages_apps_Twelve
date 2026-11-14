@@ -6,6 +6,16 @@
 package org.lineageos.twelve
 
 import android.os.Bundle
+import com.google.android.material.color.MaterialColors
+import androidx.recyclerview.widget.RecyclerView
+import androidx.preference.PreferenceGroupAdapter
+import androidx.preference.PreferenceCategory
+import android.widget.TextView
+import android.graphics.drawable.RippleDrawable
+import android.graphics.drawable.GradientDrawable
+import android.graphics.Typeface
+import android.content.res.ColorStateList
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -129,6 +139,22 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
             clipToPadding = false
             isVerticalScrollBarEnabled = false
 
+            addOnChildAttachStateChangeListener(object : RecyclerView.OnChildAttachStateChangeListener {
+                @SuppressLint("RestrictedApi")
+                override fun onChildViewAttachedToWindow(view: View) {
+                    val position = getChildAdapterPosition(view)
+                    val preference = (adapter as? PreferenceGroupAdapter)?.getItem(position)
+
+                    when (preference) {
+                        null -> Unit
+                        is PreferenceCategory -> styleCategory(view)
+                        else -> styleRow(view)
+                    }
+                }
+
+                override fun onChildViewDetachedFromWindow(view: View) = Unit
+            })
+
             ViewCompat.setOnApplyWindowInsetsListener(this) { _, windowInsets ->
                 val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
 
@@ -215,5 +241,46 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
                 .setNegativeButton(android.R.string.cancel) { _, _ -> /* Do nothing */ }
                 .show()
         }
+    }
+}
+
+/**
+ * Every setting is a rounded tonal card with room around it.
+ */
+private fun styleRow(view: View) {
+    val density = view.resources.displayMetrics.density
+    val card = GradientDrawable().apply {
+        cornerRadius = 24 * density
+        setColor(
+            MaterialColors.getColor(
+                view, com.google.android.material.R.attr.colorSurfaceContainerLow
+            )
+        )
+    }
+
+    view.background = RippleDrawable(
+        ColorStateList.valueOf(
+            MaterialColors.getColor(view, androidx.appcompat.R.attr.colorControlHighlight)
+        ),
+        card,
+        null,
+    )
+    view.clipToOutline = true
+    (view.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
+        val side = (12 * density).toInt()
+        val gap = (3 * density).toInt()
+        it.setMargins(side, gap, side, gap)
+        view.layoutParams = it
+    }
+}
+
+private fun styleCategory(view: View) {
+    view.findViewById<TextView>(android.R.id.title)?.apply {
+        setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_TitleMedium)
+        setTypeface(typeface, Typeface.BOLD)
+    }
+    (view.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
+        it.topMargin = (16 * view.resources.displayMetrics.density).toInt()
+        view.layoutParams = it
     }
 }
