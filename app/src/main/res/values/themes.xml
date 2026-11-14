@@ -175,23 +175,6 @@
         <item name="android:letterSpacing">-0.02</item>
     </style>
 
-    <style name="Widget.Twelve.LibraryChip" parent="Widget.Material3.Chip.Filter">
-        <item name="android:checkable">true</item>
-        <item name="android:textAppearance">?attr/textAppearanceTitleSmall</item>
-        <item name="chipMinHeight">44dp</item>
-        <item name="chipIconSize">20dp</item>
-        <item name="chipIconVisible">true</item>
-        <item name="checkedIconVisible">false</item>
-        <item name="chipStartPadding">6dp</item>
-        <item name="chipEndPadding">6dp</item>
-        <item name="chipCornerRadius">22dp</item>
-        <item name="chipBackgroundColor">@color/library_chip_background</item>
-        <item name="chipStrokeWidth">0dp</item>
-        <item name="android:textColor">@color/library_chip_foreground</item>
-        <item name="chipIconTint">@color/library_chip_foreground</item>
-        <item name="rippleColor">?attr/colorPrimary</item>
-    </style>
-
     <!-- A button of a connected group: the chosen one fills with the accent color and becomes a pill -->
     <style name="Widget.Twelve.ConnectedButton" parent="Widget.Material3Expressive.Button.TonalButton">
         <item name="android:checkable">true</item>

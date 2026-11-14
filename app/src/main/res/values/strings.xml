@@ -112,7 +112,6 @@
     <string name="share_playlist">Share playlist</string>
     <string name="save_playlist_to_file">Save playlist to a file</string>
     <string name="import_playlist">Import playlist</string>
-    <string name="import_playlist_hint">Paste the code of a playlist, or open a saved file</string>
     <string name="import_playlist_code">Playlist code</string>
     <string name="import_playlist_from_file">Open file</string>
     <string name="import_playlist_positive">Import</string>
@@ -251,7 +250,6 @@
     <string name="stop_playback_on_task_removed_summary">Stop playback when the app is cleared from recents</string>
     <string name="queue_reorder">Reorder</string>
     <string name="queue_remove">Remove from queue</string>
-    <string name="queue_up_next">Up next</string>
     <string name="refresh">Refresh</string>
     <string name="more_options">More options</string>
     <string name="autoplay">AutoPlay</string>
@@ -403,7 +401,6 @@
     <string name="online_service">Service</string>
     <string name="online_languages">Languages</string>
     <string name="online_header">Online</string>
-    <string name="online_audio_quality">Streaming quality</string>
     <string name="online_audio_quality_wifi">Streaming quality on Wi-Fi</string>
     <string name="online_audio_quality_mobile">Streaming quality on mobile data</string>
     <string name="online_languages_summary">Languages used for trending songs and recommendations</string>

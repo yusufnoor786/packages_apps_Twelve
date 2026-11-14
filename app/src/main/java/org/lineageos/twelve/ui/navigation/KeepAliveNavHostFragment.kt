@@ -5,7 +5,7 @@
 
 package org.lineageos.twelve.ui.navigation
 
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.fragment.NavHostFragment
 
 /**
@@ -13,11 +13,11 @@ import androidx.navigation.fragment.NavHostFragment
  * [KeepAliveFragmentNavigator].
  */
 class KeepAliveNavHostFragment : NavHostFragment() {
-    override fun onCreateNavController(navController: NavController) {
-        super.onCreateNavController(navController)
+    override fun onCreateNavHostController(navHostController: NavHostController) {
+        super.onCreateNavHostController(navHostController)
 
         // Same name as the default one: it takes its place
-        navController.navigatorProvider.addNavigator(
+        navHostController.navigatorProvider.addNavigator(
             KeepAliveFragmentNavigator(requireContext(), childFragmentManager, id)
         )
     }

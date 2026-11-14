@@ -5,6 +5,7 @@
 
 package org.lineageos.twelve.ui.widgets
 
+import android.annotation.SuppressLint
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
@@ -39,6 +40,8 @@ abstract class AppWidgetUpdater<T : AppWidgetProvider>(
      */
     abstract suspend fun update(context: Context, views: List<RemoteViews>)
 
+    // The responsive RemoteViews are only used from Android 12, see `responsive`
+    @SuppressLint("NewApi")
     suspend fun update(
         context: Context,
         appWidgetManager: AppWidgetManager,

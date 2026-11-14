@@ -3,8 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+@file:SuppressLint("RestrictedApi")
+
 package org.lineageos.twelve.ui.expressive
 
+import android.annotation.SuppressLint
 import android.graphics.Matrix
 import android.graphics.Path
 import android.graphics.drawable.Drawable
