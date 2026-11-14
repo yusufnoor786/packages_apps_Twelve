@@ -11,10 +11,10 @@ import android.view.MotionEvent
 import android.view.VelocityTracker
 import android.view.ViewConfiguration
 import android.widget.FrameLayout
-import androidx.dynamicanimation.animation.FloatPropertyCompat
-import androidx.dynamicanimation.animation.SpringAnimation
-import androidx.dynamicanimation.animation.SpringForce
+import android.view.Choreographer
 import kotlin.math.abs
+import kotlin.math.exp
+import kotlin.math.sqrt
 
 /**
  * A layout that follows a downward drag and, when released far enough or fast enough, slides
@@ -49,16 +49,8 @@ class SwipeToDismissLayout @JvmOverloads constructor(
     private var tracking = false
     private var dragging = false
     private var velocityTracker: VelocityTracker? = null
-    private var animation: SpringAnimation? = null
+    private var animation: Spring? = null
     private var dismissing = false
-
-    private val offsetProperty = object : FloatPropertyCompat<SwipeToDismissLayout>("offset") {
-        override fun getValue(layout: SwipeToDismissLayout) = layout.translationY
-
-        override fun setValue(layout: SwipeToDismissLayout, value: Float) {
-            layout.applyOffset(value)
-        }
-    }
 
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
         if (dismissing) {
@@ -191,22 +183,19 @@ class SwipeToDismissLayout @JvmOverloads constructor(
         velocityTracker?.recycle()
         velocityTracker = null
 
-        animation = SpringAnimation(this, offsetProperty, target).apply {
-            spring = SpringForce(target).apply {
-                dampingRatio = SpringForce.DAMPING_RATIO_NO_BOUNCY
-                stiffness = STIFFNESS
-            }
-            setStartVelocity(velocity.coerceAtLeast(0f))
-            setMinimumVisibleChange(SETTLED_PX)
-            addEndListener { _, canceled, _, _ ->
-                if (!canceled && dismiss) {
+        animation = Spring(
+            from = translationY,
+            target = target,
+            velocity = velocity.coerceAtLeast(0f),
+            onValue = ::applyOffset,
+            onEnd = {
+                if (dismiss) {
                     onDismissed?.invoke()
-                } else if (!dismiss) {
+                } else {
                     dismissing = false
                 }
-            }
-            start()
-        }
+            },
+        ).also { it.start() }
     }
 
     private fun reset() {
@@ -224,6 +213,58 @@ class SwipeToDismissLayout @JvmOverloads constructor(
         super.onDetachedFromWindow()
     }
 
+    /**
+     * A critically damped spring, driven by the frame clock: it leaves briskly with the speed the
+     * finger had and then spends its time easing into place, without a bounce.
+     */
+    private class Spring(
+        private val from: Float,
+        private val target: Float,
+        private val velocity: Float,
+        private val onValue: (Float) -> Unit,
+        private val onEnd: () -> Unit,
+    ) : Choreographer.FrameCallback {
+        private val omega = sqrt(STIFFNESS)
+        private var startNanos = 0L
+        private var cancelled = false
+
+        fun start() {
+            Choreographer.getInstance().postFrameCallback(this)
+        }
+
+        fun cancel() {
+            cancelled = true
+            Choreographer.getInstance().removeFrameCallback(this)
+        }
+
+        override fun doFrame(frameTimeNanos: Long) {
+            if (cancelled) {
+                return
+            }
+
+            if (startNanos == 0L) {
+                startNanos = frameTimeNanos
+            }
+
+            val seconds = (frameTimeNanos - startNanos) / 1e9f
+            val offset = from - target
+
+            // x(t) = (x0 + (v0 + w * x0) * t) * e^(-w * t), relative to the target
+            val decay = exp(-omega * seconds)
+            val position = target + (offset + (velocity + omega * offset) * seconds) * decay
+            val speed = (velocity - omega * (velocity + omega * offset) * seconds) * decay
+
+            if (abs(position - target) < SETTLED_PX && abs(speed) < SETTLED_SPEED) {
+                onValue(target)
+                onEnd()
+                return
+            }
+
+            onValue(position)
+            Choreographer.getInstance().postFrameCallback(this)
+        }
+    }
+
     companion object {
         private const val HORIZONTAL_TOLERANCE = 1.2f
         private const val DISMISS_FRACTION = 0.22f
@@ -231,6 +272,7 @@ class SwipeToDismissLayout @JvmOverloads constructor(
         private const val FLING_MIN_FRACTION = 0.1f
         private const val STIFFNESS = 200f
         private const val SETTLED_PX = 0.5f
+        private const val SETTLED_SPEED = 20f
         private const val SHRINK = 0.1f
         private const val FADE = 0.45f
     }

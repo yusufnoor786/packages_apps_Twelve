@@ -8,6 +8,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
+    android:background="@drawable/bg_media_card"
     android:orientation="vertical"
     android:padding="8dp">
 
@@ -48,7 +49,7 @@
         android:hyphenationFrequency="normal"
         android:maxLines="1"
         android:textAppearance="?attr/textAppearanceTitleSmall"
-        android:textColor="@color/list_item_primary"
+        android:textColor="?attr/colorOnSurface"
         android:textStyle="bold"
         android:visibility="gone"
         tools:text="Headline"
@@ -62,7 +63,7 @@
         android:hyphenationFrequency="normal"
         android:maxLines="1"
         android:textAppearance="?attr/textAppearanceBodySmall"
-        android:textColor="@color/list_item_secondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:visibility="gone"
         tools:text="Subhead"
         tools:visibility="visible" />
@@ -75,7 +76,7 @@
         android:hyphenationFrequency="normal"
         android:maxLines="1"
         android:textAppearance="?attr/textAppearanceBodySmall"
-        android:textColor="@color/list_item_secondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:visibility="gone"
         tools:text="Supporting"
         tools:visibility="visible" />

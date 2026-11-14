@@ -120,6 +120,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                             )
                         }
 
+                        view.setExpressiveCard()
                         view.setLeadingCover(item.thumbnail, R.drawable.ic_album)
                         view.setTrailingIconImage(R.drawable.ic_album)
                         view.headlineText = item.title
@@ -134,6 +135,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                             )
                         }
 
+                        view.setExpressiveCard()
                         view.setLeadingCover(item.thumbnail, R.drawable.ic_person)
                         view.setTrailingIconImage(R.drawable.ic_person)
                         view.headlineText = item.name
@@ -148,6 +150,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                             )
                         }
 
+                        view.setExpressiveCard()
                         view.setLeadingCover(item.thumbnail, R.drawable.ic_music_note)
                         view.setTrailingIconImage(R.drawable.ic_music_note)
                         view.headlineText = item.title
@@ -175,6 +178,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                             )
                         }
 
+                        view.setExpressiveCard()
                         view.setLeadingCover(item.thumbnail, R.drawable.ic_playlist_play)
                         view.setTrailingIconImage(R.drawable.ic_playlist_play)
                         view.headlineText = item.name

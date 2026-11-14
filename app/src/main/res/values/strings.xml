@@ -270,6 +270,16 @@
 
     <!-- Now playing widget -->
     <string name="now_playing_widget_description">Now playing</string>
+    <string name="now_playing_square_widget_label">Music (1×1)</string>
+    <string name="now_playing_square_widget_description">A play button on the cover</string>
+    <string name="now_playing_wide_widget_label">Music (2×1)</string>
+    <string name="now_playing_wide_widget_description">Title and a play button</string>
+    <string name="now_playing_compact_widget_label">Music (2×2)</string>
+    <string name="now_playing_compact_widget_description">Title and the three buttons</string>
+    <string name="now_playing_tall_widget_label">Music (2×4)</string>
+    <string name="now_playing_tall_widget_description">Big cover, title and the three buttons</string>
+    <string name="now_playing_row_widget_label">Music (4×1)</string>
+    <string name="now_playing_row_widget_description">Now playing, in a single row</string>
     <string name="now_playing_widget_dummy_title">Title</string>
     <string name="now_playing_widget_dummy_artist">Artist</string>
 

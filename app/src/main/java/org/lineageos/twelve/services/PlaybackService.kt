@@ -65,6 +65,11 @@ import org.lineageos.twelve.ext.typedRepeatMode
 import org.lineageos.twelve.models.RepeatMode
 import org.lineageos.twelve.models.Result
 import org.lineageos.twelve.ui.widgets.NowPlayingAppWidgetProvider
+import org.lineageos.twelve.ui.widgets.NowPlayingRowAppWidgetProvider
+import org.lineageos.twelve.ui.widgets.NowPlayingTallAppWidgetProvider
+import org.lineageos.twelve.ui.widgets.NowPlayingCompactAppWidgetProvider
+import org.lineageos.twelve.ui.widgets.NowPlayingWideAppWidgetProvider
+import org.lineageos.twelve.ui.widgets.NowPlayingSquareAppWidgetProvider
 
 @OptIn(UnstableApi::class)
 class PlaybackService : MediaLibraryService() {
@@ -687,6 +692,11 @@ class PlaybackService : MediaLibraryService() {
                 ) {
                     lifecycleScope.launch {
                         NowPlayingAppWidgetProvider.update(this@PlaybackService)
+                        NowPlayingRowAppWidgetProvider.update(this@PlaybackService)
+                        NowPlayingTallAppWidgetProvider.update(this@PlaybackService)
+                        NowPlayingCompactAppWidgetProvider.update(this@PlaybackService)
+                        NowPlayingWideAppWidgetProvider.update(this@PlaybackService)
+                        NowPlayingSquareAppWidgetProvider.update(this@PlaybackService)
                     }
                 }
 

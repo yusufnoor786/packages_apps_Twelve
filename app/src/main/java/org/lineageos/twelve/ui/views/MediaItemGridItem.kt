@@ -14,4 +14,10 @@ class MediaItemGridItem @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     @AttrRes defStyleAttr: Int = com.google.android.material.R.attr.materialCardViewStyle,
-) : BaseMediaItemView(context, attrs, defStyleAttr, R.layout.item_media_item_grid)
+) : BaseMediaItemView(context, attrs, defStyleAttr, R.layout.item_media_item_grid) {
+    init {
+        // The card is the layout itself, the view around it only holds the margins
+        setCardBackgroundColor(android.graphics.Color.TRANSPARENT)
+        radius = 32 * resources.displayMetrics.density
+    }
+}

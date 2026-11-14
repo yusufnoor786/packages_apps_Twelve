@@ -140,6 +140,81 @@
 
         </receiver>
 
+        <receiver
+            android:name=".ui.widgets.NowPlayingRowAppWidgetProvider"
+            android:exported="false"
+            android:label="@string/now_playing_row_widget_label">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/app_widget_now_playing_row" />
+
+        </receiver>
+
+        <receiver
+            android:name=".ui.widgets.NowPlayingSquareAppWidgetProvider"
+            android:exported="false"
+            android:label="@string/now_playing_square_widget_label">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/app_widget_now_playing_square" />
+
+        </receiver>
+
+        <receiver
+            android:name=".ui.widgets.NowPlayingWideAppWidgetProvider"
+            android:exported="false"
+            android:label="@string/now_playing_wide_widget_label">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/app_widget_now_playing_wide" />
+
+        </receiver>
+
+        <receiver
+            android:name=".ui.widgets.NowPlayingCompactAppWidgetProvider"
+            android:exported="false"
+            android:label="@string/now_playing_compact_widget_label">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/app_widget_now_playing_compact" />
+
+        </receiver>
+
+        <receiver
+            android:name=".ui.widgets.NowPlayingTallAppWidgetProvider"
+            android:exported="false"
+            android:label="@string/now_playing_tall_widget_label">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/app_widget_now_playing_tall" />
+
+        </receiver>
+
         <meta-data
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />

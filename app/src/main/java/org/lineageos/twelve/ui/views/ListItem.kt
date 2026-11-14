@@ -222,7 +222,7 @@ class ListItem @JvmOverloads constructor(
                 this,
                 when (highlighted) {
                     true -> com.google.android.material.R.attr.colorPrimaryContainer
-                    false -> com.google.android.material.R.attr.colorSurfaceContainerLow
+                    false -> com.google.android.material.R.attr.colorSurfaceContainerHigh
                 }
             )
         )

@@ -485,7 +485,14 @@ class SaavnDataSource(
 
         when {
             playlistUri == favoritesUri -> songs(library.favorites).map { songs ->
-                favoritesPlaylist to songs.map { it.toAudio(favorites) }
+                Playlist.Builder(favoritesUri)
+                    .setName(favoritesPlaylist.name)
+                    .setType(Playlist.Type.FAVORITES)
+                    .setThumbnail(
+                        songs.firstNotNullOfOrNull { it.image }
+                            ?.toThumbnail(Thumbnail.Type.FRONT_COVER)
+                    )
+                    .build() to songs.map { it.toAudio(favorites) }
             }
 
             segments.size == 3 && segments[1] == PATH_USER_PLAYLIST -> {

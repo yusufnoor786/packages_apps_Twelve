@@ -176,6 +176,23 @@
         <item name="android:letterSpacing">-0.02</item>
     </style>
 
+    <style name="Widget.Twelve.LibraryChip" parent="Widget.Material3.Chip.Filter">
+        <item name="android:checkable">true</item>
+        <item name="android:textAppearance">?attr/textAppearanceTitleSmall</item>
+        <item name="chipMinHeight">44dp</item>
+        <item name="chipIconSize">20dp</item>
+        <item name="chipIconVisible">true</item>
+        <item name="checkedIconVisible">false</item>
+        <item name="chipStartPadding">6dp</item>
+        <item name="chipEndPadding">6dp</item>
+        <item name="chipCornerRadius">22dp</item>
+        <item name="chipBackgroundColor">@color/library_chip_background</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="android:textColor">@color/library_chip_foreground</item>
+        <item name="chipIconTint">@color/library_chip_foreground</item>
+        <item name="rippleColor">?attr/colorPrimary</item>
+    </style>
+
     <!-- App widget -->
     <style name="Theme.Twelve.AppWidgetContainer" parent="Theme.Material3Expressive.DynamicColors.DayNight">
         <item name="appWidgetRadius">36dp</item>

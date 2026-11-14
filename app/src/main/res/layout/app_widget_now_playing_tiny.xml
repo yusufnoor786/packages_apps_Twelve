@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/linearLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_app_widget"
+    android:backgroundTint="?attr/colorPrimary"
+    android:clipToOutline="true"
+    android:theme="@style/Theme.Twelve.AppWidgetContainer"
+    tools:targetApi="s">
+
+    <!-- The cover, slightly blurred, fills the widget -->
+    <ImageView
+        android:id="@+id/backdropImageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop" />
+
+    <!-- Darkens it so that text and buttons can be read on any cover -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_widget_scrim" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="6dp">
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <ProgressBar
+                android:id="@+id/bufferingProgressBar"
+                style="@style/Widget.AppCompat.ProgressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+
+            <ImageButton
+                android:id="@+id/playPauseImageButton"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_widget_round"
+                android:backgroundTint="?attr/colorPrimary"
+                android:contentDescription="@string/content_description_play_pause"
+                android:scaleType="center"
+                android:src="@drawable/ic_play_arrow"
+                android:tint="?attr/colorOnPrimary"
+                tools:ignore="UseAppTint"
+                tools:targetApi="s" />
+
+        </FrameLayout>
+
+    </LinearLayout>
+</FrameLayout>

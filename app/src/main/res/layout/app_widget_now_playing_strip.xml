@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/linearLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_app_widget"
+    android:backgroundTint="?attr/colorPrimary"
+    android:clipToOutline="true"
+    android:theme="@style/Theme.Twelve.AppWidgetContainer"
+    tools:targetApi="s">
+
+    <!-- The cover, slightly blurred, fills the widget -->
+    <ImageView
+        android:id="@+id/backdropImageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop" />
+
+    <!-- Darkens it so that text and buttons can be read on any cover -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_widget_scrim" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="2dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginEnd="8dp">
+
+            <TextView
+                android:id="@+id/titleTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/now_playing_widget_dummy_title"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/artistNameTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/now_playing_widget_dummy_artist"
+                android:textColor="#D9FFFFFF"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/previousImageButton"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:background="@drawable/bg_widget_round"
+            android:backgroundTint="#40FFFFFF"
+            android:contentDescription="@string/content_description_previous_track"
+            android:scaleType="center"
+            android:src="@drawable/ic_skip_previous"
+            android:tint="@android:color/white"
+            tools:ignore="UseAppTint"
+            tools:targetApi="s" />
+
+        <FrameLayout android:layout_width="4dp" android:layout_height="1dp" />
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <ProgressBar
+                android:id="@+id/bufferingProgressBar"
+                style="@style/Widget.AppCompat.ProgressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+
+            <ImageButton
+                android:id="@+id/playPauseImageButton"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_widget_round"
+                android:backgroundTint="?attr/colorPrimary"
+                android:contentDescription="@string/content_description_play_pause"
+                android:scaleType="center"
+                android:src="@drawable/ic_play_arrow"
+                android:tint="?attr/colorOnPrimary"
+                tools:ignore="UseAppTint"
+                tools:targetApi="s" />
+
+        </FrameLayout>
+
+        <FrameLayout android:layout_width="4dp" android:layout_height="1dp" />
+
+        <ImageButton
+            android:id="@+id/nextImageButton"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:background="@drawable/bg_widget_round"
+            android:backgroundTint="#40FFFFFF"
+            android:contentDescription="@string/content_description_next_track"
+            android:scaleType="center"
+            android:src="@drawable/ic_skip_next"
+            android:tint="@android:color/white"
+            tools:ignore="UseAppTint"
+            tools:targetApi="s" />
+
+    </LinearLayout>
+</FrameLayout>

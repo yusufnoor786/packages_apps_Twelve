@@ -9,26 +9,31 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_app_widget"
-    android:backgroundTint="?attr/colorPrimaryContainer"
+    android:backgroundTint="?attr/colorPrimary"
     android:clipToOutline="true"
     android:theme="@style/Theme.Twelve.AppWidgetContainer"
     tools:targetApi="s">
 
+    <!-- The cover, slightly blurred, fills the widget -->
     <ImageView
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:layout_gravity="top|end"
-        android:layout_marginTop="-56dp"
-        android:layout_marginEnd="-64dp"
+        android:id="@+id/backdropImageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:importantForAccessibility="no"
-        android:src="@drawable/ic_deco_shapes" />
+        android:scaleType="centerCrop" />
+
+    <!-- Darkens it so that text and buttons can be read on any cover -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_widget_scrim" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center_vertical"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="14dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -39,8 +44,8 @@
 
             <ImageView
                 android:id="@+id/thumbnailImageView"
-                android:layout_width="76dp"
-                android:layout_height="76dp"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
                 android:background="@drawable/bg_widget_cover"
                 android:backgroundTint="?attr/colorSecondaryContainer"
                 android:clipToOutline="true"
@@ -52,7 +57,7 @@
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
+                android:layout_marginStart="12dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
 
@@ -63,21 +68,19 @@
                     android:ellipsize="end"
                     android:maxLines="2"
                     android:text="@string/now_playing_widget_dummy_title"
-                    android:textColor="?attr/colorOnPrimaryContainer"
-                    android:textSize="20sp"
+                    android:textColor="@android:color/white"
+                    android:textSize="17sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/artistNameTextView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:alpha="0.8"
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:text="@string/now_playing_widget_dummy_artist"
-                    android:textColor="?attr/colorOnPrimaryContainer"
-                    android:textSize="14sp" />
+                    android:textColor="#D9FFFFFF"
+                    android:textSize="13sp" />
 
             </LinearLayout>
 
@@ -86,26 +89,27 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="10dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <ImageButton
                 android:id="@+id/previousImageButton"
-                android:layout_width="52dp"
-                android:layout_height="52dp"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
                 android:background="@drawable/bg_widget_round"
-                android:backgroundTint="?attr/colorSurface"
+                android:backgroundTint="#40FFFFFF"
                 android:contentDescription="@string/content_description_previous_track"
+                android:scaleType="center"
                 android:src="@drawable/ic_skip_previous"
-                android:tint="?attr/colorOnSurface"
+                android:tint="@android:color/white"
                 tools:ignore="UseAppTint"
                 tools:targetApi="s" />
 
             <FrameLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="10dp"
+                android:layout_marginHorizontal="8dp"
                 android:layout_weight="1">
 
                 <ProgressBar
@@ -119,10 +123,11 @@
                 <ImageButton
                     android:id="@+id/playPauseImageButton"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="50dp"
                     android:background="@drawable/bg_widget_pill_big"
                     android:backgroundTint="?attr/colorPrimary"
                     android:contentDescription="@string/content_description_play_pause"
+                    android:scaleType="center"
                     android:src="@drawable/ic_play_arrow"
                     android:tint="?attr/colorOnPrimary"
                     tools:ignore="UseAppTint"
@@ -132,18 +137,18 @@
 
             <ImageButton
                 android:id="@+id/nextImageButton"
-                android:layout_width="52dp"
-                android:layout_height="52dp"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
                 android:background="@drawable/bg_widget_round"
-                android:backgroundTint="?attr/colorSurface"
+                android:backgroundTint="#40FFFFFF"
                 android:contentDescription="@string/content_description_next_track"
+                android:scaleType="center"
                 android:src="@drawable/ic_skip_next"
-                android:tint="?attr/colorOnSurface"
+                android:tint="@android:color/white"
                 tools:ignore="UseAppTint"
                 tools:targetApi="s" />
 
         </LinearLayout>
 
     </LinearLayout>
-
 </FrameLayout>

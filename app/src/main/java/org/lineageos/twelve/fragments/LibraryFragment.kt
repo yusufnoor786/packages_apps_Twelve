@@ -7,12 +7,11 @@ package org.lineageos.twelve.fragments
 
 import android.os.Bundle
 import android.view.View
-import androidx.annotation.StringRes
+import androidx.annotation.IdRes
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import com.google.android.material.tabs.TabLayout
-import com.google.android.material.tabs.TabLayoutMediator
+import com.google.android.material.chip.ChipGroup
 import org.lineageos.twelve.R
 import org.lineageos.twelve.ext.getViewProperty
 
@@ -21,28 +20,28 @@ import org.lineageos.twelve.ext.getViewProperty
  */
 class LibraryFragment : Fragment(R.layout.fragment_library) {
     // Views
-    private val tabLayout by getViewProperty<TabLayout>(R.id.tabLayout)
+    private val chipGroup by getViewProperty<ChipGroup>(R.id.chipGroup)
     private val viewPager2 by getViewProperty<ViewPager2>(R.id.viewPager2)
 
     // ViewPager2
     private enum class Menus(
-        @StringRes val titleStringResId: Int,
+        @IdRes val chipId: Int,
         val fragment: () -> Fragment,
     ) {
         ALBUMS(
-            R.string.library_fragment_menu_albums,
+            R.id.albumsChip,
             { AlbumsFragment() },
         ),
         ARTISTS(
-            R.string.library_fragment_menu_artists,
+            R.id.artistsChip,
             { ArtistsFragment() },
         ),
         GENRES(
-            R.string.library_fragment_menu_genres,
+            R.id.genresChip,
             { GenresFragment() },
         ),
         PLAYLISTS(
-            R.string.library_fragment_menu_playlists,
+            R.id.playlistsChip,
             { PlaylistsFragment() },
         ),
     }
@@ -58,12 +57,19 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
         }
         viewPager2.offscreenPageLimit = 1
 
-        TabLayoutMediator(tabLayout, viewPager2) { tab, position ->
-            val menu = Menus.entries[position]
-
-            tab.setText(menu.titleStringResId)
-            tab.setContentDescription(menu.titleStringResId)
-        }.attach()
+        // The chips and the pages follow each other
+        chipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
+            val position = Menus.entries.indexOfFirst { it.chipId in checkedIds }
+            if (position >= 0 && position != viewPager2.currentItem) {
+                viewPager2.currentItem = position
+            }
+        }
+        viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                chipGroup.check(Menus.entries[position].chipId)
+            }
+        })
+        chipGroup.check(Menus.entries[viewPager2.currentItem].chipId)
     }
 
     override fun onDestroyView() {
