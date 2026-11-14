@@ -31,6 +31,7 @@ import org.lineageos.twelve.ext.updatePadding
 import org.lineageos.twelve.models.Artist
 import org.lineageos.twelve.models.FlowResult
 import org.lineageos.twelve.models.SortingStrategy
+import org.lineageos.twelve.ui.views.PullToRefreshLayout
 import org.lineageos.twelve.ui.recyclerview.SimpleListAdapter
 import org.lineageos.twelve.ui.recyclerview.UniqueItemDiffCallback
 import org.lineageos.twelve.ui.views.ListItem
@@ -49,6 +50,7 @@ class ArtistsFragment : Fragment(R.layout.fragment_artists) {
     // Views
     private val linearProgressIndicator by getViewProperty<LinearProgressIndicator>(R.id.linearProgressIndicator)
     private val noElementsLinearLayout by getViewProperty<LinearLayout>(R.id.noElementsLinearLayout)
+    private val pullToRefreshLayout by getViewProperty<PullToRefreshLayout>(R.id.pullToRefreshLayout)
     private val recyclerView by getViewProperty<RecyclerView>(R.id.recyclerView)
     private val sortingChip by getViewProperty<SortingChip>(R.id.sortingChip)
 
@@ -121,6 +123,8 @@ class ArtistsFragment : Fragment(R.layout.fragment_artists) {
 
         recyclerView.adapter = adapter
 
+        pullToRefreshLayout.onRefresh = { viewModel.refreshContent() }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 permissionsChecker.withPermissionsGranted {
@@ -148,6 +152,7 @@ class ArtistsFragment : Fragment(R.layout.fragment_artists) {
                         }
 
                         is FlowResult.Success -> {
+                            pullToRefreshLayout.finishRefresh()
                             adapter.submitList(it.data)
 
                             val isEmpty = it.data.isEmpty()
@@ -156,6 +161,7 @@ class ArtistsFragment : Fragment(R.layout.fragment_artists) {
                         }
 
                         is FlowResult.Failure -> {
+                            pullToRefreshLayout.finishRefresh()
                             Log.e(
                                 LOG_TAG,
                                 "Failed to load artists, error: ${it.error}",

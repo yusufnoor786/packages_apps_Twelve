@@ -37,6 +37,7 @@ import org.lineageos.twelve.models.Playlist
 import org.lineageos.twelve.ui.recyclerview.SimpleListAdapter
 import org.lineageos.twelve.ui.recyclerview.UniqueItemDiffCallback
 import org.lineageos.twelve.ui.views.ActivityTabView
+import org.lineageos.twelve.ui.views.PullToRefreshLayout
 import org.lineageos.twelve.utils.PermissionsChecker
 import org.lineageos.twelve.utils.PermissionsUtils
 import org.lineageos.twelve.viewmodels.ActivityViewModel
@@ -51,6 +52,7 @@ class ActivityFragment : Fragment(R.layout.fragment_activity) {
     // Views
     private val linearProgressIndicator by getViewProperty<LinearProgressIndicator>(R.id.linearProgressIndicator)
     private val noElementsLinearLayout by getViewProperty<LinearLayout>(R.id.noElementsLinearLayout)
+    private val pullToRefreshLayout by getViewProperty<PullToRefreshLayout>(R.id.pullToRefreshLayout)
     private val recyclerView by getViewProperty<RecyclerView>(R.id.recyclerView)
 
     // RecyclerView
@@ -93,7 +95,7 @@ class ActivityFragment : Fragment(R.layout.fragment_activity) {
                     true
                 }
 
-                view.setActivityTab(item)
+                view.setActivityTab(item, hero = bindingAdapterPosition == 0)
             }
         }
     }
@@ -124,6 +126,8 @@ class ActivityFragment : Fragment(R.layout.fragment_activity) {
 
         recyclerView.adapter = adapter
 
+        pullToRefreshLayout.onRefresh = { viewModel.refreshContent() }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 permissionsChecker.withPermissionsGranted {
@@ -149,6 +153,8 @@ class ActivityFragment : Fragment(R.layout.fragment_activity) {
                 }
 
                 is FlowResult.Success -> {
+                    pullToRefreshLayout.finishRefresh()
+
                     val data = it.data
 
                     adapter.submitList(data)
@@ -159,6 +165,8 @@ class ActivityFragment : Fragment(R.layout.fragment_activity) {
                 }
 
                 is FlowResult.Failure -> {
+                    pullToRefreshLayout.finishRefresh()
+
                     Log.e(LOG_TAG, "Failed to load activity, error: ${it.error}", it.throwable)
 
                     recyclerView.isVisible = false
@@ -170,5 +178,6 @@ class ActivityFragment : Fragment(R.layout.fragment_activity) {
 
     companion object {
         private val LOG_TAG = ActivityFragment::class.simpleName!!
+
     }
 }

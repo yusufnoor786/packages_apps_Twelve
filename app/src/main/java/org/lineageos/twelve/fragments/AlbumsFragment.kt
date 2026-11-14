@@ -32,6 +32,7 @@ import org.lineageos.twelve.ext.toPx
 import org.lineageos.twelve.models.Album
 import org.lineageos.twelve.models.FlowResult
 import org.lineageos.twelve.models.SortingStrategy
+import org.lineageos.twelve.ui.views.PullToRefreshLayout
 import org.lineageos.twelve.ui.recyclerview.DisplayAwareGridLayoutManager
 import org.lineageos.twelve.ui.recyclerview.SimpleListAdapter
 import org.lineageos.twelve.ui.recyclerview.UniqueItemDiffCallback
@@ -51,6 +52,7 @@ class AlbumsFragment : Fragment(R.layout.fragment_albums) {
     // Views
     private val linearProgressIndicator by getViewProperty<LinearProgressIndicator>(R.id.linearProgressIndicator)
     private val noElementsLinearLayout by getViewProperty<LinearLayout>(R.id.noElementsLinearLayout)
+    private val pullToRefreshLayout by getViewProperty<PullToRefreshLayout>(R.id.pullToRefreshLayout)
     private val recyclerView by getViewProperty<RecyclerView>(R.id.recyclerView)
     private val sortingChip by getViewProperty<SortingChip>(R.id.sortingChip)
 
@@ -119,6 +121,8 @@ class AlbumsFragment : Fragment(R.layout.fragment_albums) {
         recyclerView.layoutManager = DisplayAwareGridLayoutManager(recyclerView.context, 2)
         recyclerView.adapter = adapter
 
+        pullToRefreshLayout.onRefresh = { viewModel.refreshContent() }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 permissionsChecker.withPermissionsGranted {
@@ -147,6 +151,7 @@ class AlbumsFragment : Fragment(R.layout.fragment_albums) {
                         }
 
                         is FlowResult.Success -> {
+                            pullToRefreshLayout.finishRefresh()
                             adapter.submitList(it.data)
 
                             val isEmpty = it.data.isEmpty()
@@ -155,6 +160,7 @@ class AlbumsFragment : Fragment(R.layout.fragment_albums) {
                         }
 
                         is FlowResult.Failure -> {
+                            pullToRefreshLayout.finishRefresh()
                             Log.e(
                                 LOG_TAG,
                                 "Failed to load albums, error: ${it.error}",

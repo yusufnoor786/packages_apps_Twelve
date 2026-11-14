@@ -33,6 +33,7 @@ import org.lineageos.twelve.ext.updatePadding
 import org.lineageos.twelve.models.FlowResult
 import org.lineageos.twelve.models.Playlist
 import org.lineageos.twelve.models.SortingStrategy
+import org.lineageos.twelve.ui.views.PullToRefreshLayout
 import org.lineageos.twelve.ui.recyclerview.SimpleListAdapter
 import org.lineageos.twelve.ui.recyclerview.UniqueItemDiffCallback
 import org.lineageos.twelve.ui.views.ListItem
@@ -52,6 +53,7 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
     private val createNewPlaylistButton by getViewProperty<Button>(R.id.createNewPlaylistButton)
     private val linearProgressIndicator by getViewProperty<LinearProgressIndicator>(R.id.linearProgressIndicator)
     private val noElementsLinearLayout by getViewProperty<LinearLayout>(R.id.noElementsLinearLayout)
+    private val pullToRefreshLayout by getViewProperty<PullToRefreshLayout>(R.id.pullToRefreshLayout)
     private val recyclerView by getViewProperty<RecyclerView>(R.id.recyclerView)
     private val sortingChip by getViewProperty<SortingChip>(R.id.sortingChip)
 
@@ -148,6 +150,8 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
 
         recyclerView.adapter = adapter
 
+        pullToRefreshLayout.onRefresh = { viewModel.refreshContent() }
+
         createNewPlaylistButton.setOnClickListener {
             findNavController().navigateSafe(
                 R.id.action_mainFragment_to_fragment_create_playlist_dialog,
@@ -184,6 +188,7 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
                         }
 
                         is FlowResult.Success -> {
+                            pullToRefreshLayout.finishRefresh()
                             val isEmpty = it.data.isEmpty()
 
                             adapter.submitList(
@@ -201,6 +206,7 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists) {
                         }
 
                         is FlowResult.Failure -> {
+                            pullToRefreshLayout.finishRefresh()
                             Log.e(
                                 LOG_TAG,
                                 "Failed to load playlists, error: ${it.error}",

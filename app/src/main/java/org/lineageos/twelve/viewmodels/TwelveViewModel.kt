@@ -39,6 +39,13 @@ import org.lineageos.twelve.utils.SessionTokenUtils
  */
 abstract class TwelveViewModel(application: Application) : AndroidViewModel(application) {
     protected val mediaRepository = getApplication<TwelveApplication>().mediaRepository
+
+    /**
+     * Forget what was loaded from the network, the lists load again.
+     */
+    fun refreshContent() {
+        mediaRepository.refreshOnline()
+    }
     protected val providersRepository = getApplication<TwelveApplication>().providersRepository
     protected val outputConfigurationRepository =
         getApplication<TwelveApplication>().outputConfigurationRepository

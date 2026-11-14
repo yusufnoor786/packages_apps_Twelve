@@ -31,6 +31,7 @@ import org.lineageos.twelve.ext.updatePadding
 import org.lineageos.twelve.models.FlowResult
 import org.lineageos.twelve.models.Genre
 import org.lineageos.twelve.models.SortingStrategy
+import org.lineageos.twelve.ui.views.PullToRefreshLayout
 import org.lineageos.twelve.ui.recyclerview.SimpleListAdapter
 import org.lineageos.twelve.ui.recyclerview.UniqueItemDiffCallback
 import org.lineageos.twelve.ui.views.ListItem
@@ -49,6 +50,7 @@ class GenresFragment : Fragment(R.layout.fragment_genres) {
     // Views
     private val linearProgressIndicator by getViewProperty<LinearProgressIndicator>(R.id.linearProgressIndicator)
     private val noElementsLinearLayout by getViewProperty<LinearLayout>(R.id.noElementsLinearLayout)
+    private val pullToRefreshLayout by getViewProperty<PullToRefreshLayout>(R.id.pullToRefreshLayout)
     private val recyclerView by getViewProperty<RecyclerView>(R.id.recyclerView)
     private val sortingChip by getViewProperty<SortingChip>(R.id.sortingChip)
 
@@ -120,6 +122,8 @@ class GenresFragment : Fragment(R.layout.fragment_genres) {
 
         recyclerView.adapter = adapter
 
+        pullToRefreshLayout.onRefresh = { viewModel.refreshContent() }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 permissionsChecker.withPermissionsGranted {
@@ -147,6 +151,7 @@ class GenresFragment : Fragment(R.layout.fragment_genres) {
                         }
 
                         is FlowResult.Success -> {
+                            pullToRefreshLayout.finishRefresh()
                             adapter.submitList(it.data)
 
                             val isEmpty = it.data.isEmpty()
@@ -155,6 +160,7 @@ class GenresFragment : Fragment(R.layout.fragment_genres) {
                         }
 
                         is FlowResult.Failure -> {
+                            pullToRefreshLayout.finishRefresh()
                             Log.e(
                                 LOG_TAG,
                                 "Failed to load genres, error: ${it.error}",

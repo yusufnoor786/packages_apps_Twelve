@@ -38,8 +38,9 @@ class SwipeToDismissLayout @JvmOverloads constructor(
      */
     var canStartDrag: (MotionEvent) -> Boolean = { true }
 
-    // A little more than a tap needs, so that nothing but a deliberate swipe minimizes the player
-    private val touchSlop = (ViewConfiguration.get(context).scaledTouchSlop * 1.5f).toInt()
+    // Below the slop of the scroll views inside: they ask the parents to stay out of the way as
+    // soon as they move past theirs, this layout has to have claimed the gesture by then
+    private val touchSlop = (ViewConfiguration.get(context).scaledTouchSlop * 0.8f).toInt()
     private val minimumFlingVelocity = ViewConfiguration.get(context).scaledMinimumFlingVelocity
 
     private var downX = 0f
@@ -67,16 +68,16 @@ class SwipeToDismissLayout @JvmOverloads constructor(
         when (ev.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 animation?.cancel()
-                downX = ev.x
-                downY = ev.y
+                downX = ev.rawX
+                downY = ev.rawY
                 dragging = false
                 tracking = canStartDrag(ev)
                 velocityTracker?.recycle()
-                velocityTracker = VelocityTracker.obtain().also { it.addMovement(ev) }
+                velocityTracker = VelocityTracker.obtain().also { track(it, ev) }
             }
 
             MotionEvent.ACTION_MOVE -> {
-                velocityTracker?.addMovement(ev)
+                velocityTracker?.let { track(it, ev) }
                 maybeStartDrag(ev)
             }
 
@@ -101,19 +102,19 @@ class SwipeToDismissLayout @JvmOverloads constructor(
             MotionEvent.ACTION_DOWN -> return tracking
 
             MotionEvent.ACTION_MOVE -> {
-                velocityTracker?.addMovement(ev)
+                velocityTracker?.let { track(it, ev) }
                 maybeStartDrag(ev)
 
                 if (dragging) {
-                    applyOffset((ev.y - dragStartY).coerceAtLeast(0f))
+                    applyOffset((ev.rawY - dragStartY).coerceAtLeast(0f))
                 }
             }
 
             MotionEvent.ACTION_UP -> {
                 if (dragging) {
                     // The finger may have moved since the last move event
-                    applyOffset((ev.y - dragStartY).coerceAtLeast(0f))
-                    velocityTracker?.addMovement(ev)
+                    applyOffset((ev.rawY - dragStartY).coerceAtLeast(0f))
+                    velocityTracker?.let { track(it, ev) }
                     velocityTracker?.computeCurrentVelocity(1000)
                     release(velocityTracker?.yVelocity ?: 0f)
                 }
@@ -143,14 +144,25 @@ class SwipeToDismissLayout @JvmOverloads constructor(
             return
         }
 
-        val dy = ev.y - downY
-        val dx = ev.x - downX
+        val dy = ev.rawY - downY
+        val dx = ev.rawX - downX
 
         if (dy > touchSlop && dy > abs(dx) * HORIZONTAL_TOLERANCE) {
             dragging = true
-            dragStartY = ev.y
+            dragStartY = ev.rawY
             parent?.requestDisallowInterceptTouchEvent(true)
         }
+    }
+
+    /**
+     * The layout moves with the finger and shrinks, the coordinates of the events inside it
+     * move and shrink with it. Everything is measured on the screen instead.
+     */
+    private fun track(tracker: VelocityTracker, ev: MotionEvent) {
+        val onScreen = MotionEvent.obtain(ev)
+        onScreen.setLocation(ev.rawX, ev.rawY)
+        tracker.addMovement(onScreen)
+        onScreen.recycle()
     }
 
     private fun applyOffset(offset: Float) {
