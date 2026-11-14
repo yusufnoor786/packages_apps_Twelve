@@ -253,7 +253,7 @@ private fun styleRow(view: View) {
         cornerRadius = 24 * density
         setColor(
             MaterialColors.getColor(
-                view, com.google.android.material.R.attr.colorSurfaceContainerLow
+                view, com.google.android.material.R.attr.colorSurfaceContainerHigh
             )
         )
     }

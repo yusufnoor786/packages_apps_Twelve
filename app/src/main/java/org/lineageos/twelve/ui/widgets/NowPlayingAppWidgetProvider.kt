@@ -53,6 +53,22 @@ class NowPlayingAppWidgetProvider : BaseAppWidgetProvider<NowPlayingAppWidgetPro
                         }, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
                 )
+                for ((viewId, action, requestCode) in listOf(
+                    Triple(R.id.previousImageButton, PlaybackService.ACTION_SKIP_PREVIOUS, 1),
+                    Triple(R.id.nextImageButton, PlaybackService.ACTION_SKIP_NEXT, 2),
+                )) {
+                    setOnClickPendingIntent(
+                        viewId,
+                        PendingIntent.getForegroundService(
+                            context,
+                            requestCode,
+                            Intent(context, PlaybackService::class.java).apply {
+                                this.action = action
+                            }, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                    )
+                }
+
                 setImageViewResource(
                     R.id.playPauseImageButton,
                     when (mediaController.playWhenReady) {

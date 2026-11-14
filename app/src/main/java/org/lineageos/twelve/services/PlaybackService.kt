@@ -709,6 +709,18 @@ class PlaybackService : MediaLibraryService() {
             START_STICKY
         }
 
+        ACTION_SKIP_NEXT -> {
+            player.seekToNext()
+
+            START_STICKY
+        }
+
+        ACTION_SKIP_PREVIOUS -> {
+            player.seekToPrevious()
+
+            START_STICKY
+        }
+
         else -> super.onStartCommand(intent, flags, startId)
     }
 
@@ -866,5 +878,15 @@ class PlaybackService : MediaLibraryService() {
          * Toggles play/pause. On play request and empty queue, resumption playlist will be loaded.
          */
         const val ACTION_TOGGLE_PLAY_PAUSE = "org.lineageos.twelve.ACTION_TOGGLE_PLAY_PAUSE"
+
+        /**
+         * Skips to the next song.
+         */
+        const val ACTION_SKIP_NEXT = "org.lineageos.twelve.ACTION_SKIP_NEXT"
+
+        /**
+         * Skips to the previous song, or to the start of this one.
+         */
+        const val ACTION_SKIP_PREVIOUS = "org.lineageos.twelve.ACTION_SKIP_PREVIOUS"
     }
 }

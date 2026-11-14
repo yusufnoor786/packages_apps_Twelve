@@ -305,6 +305,7 @@
     <string name="content_description_play_pause">Play/pause</string>
     <string name="content_description_thumbnail">Thumbnail</string>
     <string name="content_description_next_track">Next track</string>
+    <string name="content_description_previous_track">Previous track</string>
 
     <!-- Play buttons -->
     <string name="play_all">Play all</string>
