@@ -9,11 +9,17 @@ import android.os.Bundle
 import android.view.View
 import androidx.annotation.IdRes
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.button.MaterialButtonToggleGroup
 import org.lineageos.twelve.R
 import org.lineageos.twelve.ext.getViewProperty
+import org.lineageos.twelve.viewmodels.MainNavigationViewModel
 
 /**
  * Music library.
@@ -22,6 +28,9 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
     // Views
     private val menuToggleGroup by getViewProperty<MaterialButtonToggleGroup>(R.id.menuToggleGroup)
     private val viewPager2 by getViewProperty<ViewPager2>(R.id.viewPager2)
+
+    // The floating navigation bar has a place for the playlists
+    private val mainNavigationViewModel by activityViewModels<MainNavigationViewModel>()
 
     // ViewPager2
     private enum class Menus(
@@ -67,9 +76,28 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
         viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 menuToggleGroup.check(Menus.entries[position].buttonId)
+                mainNavigationViewModel.libraryShowsPlaylists.value =
+                    Menus.entries[position] == Menus.PLAYLISTS
             }
         })
         menuToggleGroup.check(Menus.entries[viewPager2.currentItem].buttonId)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mainNavigationViewModel.showPlaylistsRequest.collect { playlists ->
+                    playlists ?: return@collect
+                    mainNavigationViewModel.showPlaylistsRequest.value = null
+                    val showsPlaylists = viewPager2.currentItem == Menus.PLAYLISTS.ordinal
+                    when {
+                        playlists && !showsPlaylists ->
+                            viewPager2.setCurrentItem(Menus.PLAYLISTS.ordinal, false)
+
+                        !playlists && showsPlaylists ->
+                            viewPager2.setCurrentItem(Menus.ALBUMS.ordinal, false)
+                    }
+                }
+            }
+        }
     }
 
     override fun onDestroyView() {

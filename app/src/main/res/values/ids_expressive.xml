@@ -7,4 +7,6 @@
     <item name="tag_corner_animator" type="id" />
     <item name="tag_corner_fraction" type="id" />
     <item name="tag_carousel_window" type="id" />
+    <item name="floatingNavigationIcon" type="id" />
+    <item name="floatingNavigationLabel" type="id" />
 </resources>

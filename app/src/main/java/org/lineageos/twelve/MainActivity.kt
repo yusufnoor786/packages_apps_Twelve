@@ -52,6 +52,8 @@ import org.lineageos.twelve.fragments.PlaylistFragment
 import org.lineageos.twelve.models.MediaType
 import org.lineageos.twelve.models.Result
 import org.lineageos.twelve.ui.views.NowPlayingBar
+import org.lineageos.twelve.viewmodels.MainNavigationViewModel
+import org.lineageos.twelve.ui.views.FloatingNavigationBar
 import org.lineageos.twelve.viewmodels.FullscreenViewModel
 import org.lineageos.twelve.viewmodels.IntentsViewModel
 import org.lineageos.twelve.viewmodels.NowPlayingViewModel
@@ -62,6 +64,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     private val fullscreenViewModel by viewModels<FullscreenViewModel>()
     private val intentsViewModel by viewModels<IntentsViewModel>()
     private val nowPlayingViewModel by viewModels<NowPlayingViewModel>()
+    private val mainNavigationViewModel by viewModels<MainNavigationViewModel>()
 
     // Views
     private val frameLayout by lazy { findViewById<FrameLayout>(R.id.linearLayout) }
@@ -69,6 +72,9 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     private val nowPlayingContainer by lazy { findViewById<FrameLayout>(R.id.nowPlayingContainer) }
     private val nowPlayingBar by lazy { findViewById<NowPlayingBar>(R.id.nowPlayingBar) }
+    private val floatingNavigationBar by lazy {
+        findViewById<FloatingNavigationBar>(R.id.floatingNavigationBar)
+    }
 
     // NavController
     private val navHostFragment by lazy {
@@ -165,6 +171,10 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
             systemInsets = insets
             rawWindowInsets = windowInsets
+
+            // The bar goes away while typing, the keyboard takes its place
+            floatingNavigationBar.isVisible = !windowInsets.isVisible(WindowInsetsCompat.Type.ime())
+            updateFloatingNavigationBarPlacement()
             updateNowPlayingBarPlacement()
 
             // This translates to bottom padding + space taken by the floating now playing bar.
@@ -179,6 +189,9 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                         insets.right,
                         insets.bottom + when (nowPlayingBar.isVisible) {
                             true -> nowPlayingBarAreaHeight
+                            false -> 0
+                        } + when (floatingNavigationBar.isVisible) {
+                            true -> floatingNavigationBarAreaHeight
                             false -> 0
                         }
                     )
@@ -218,6 +231,14 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             ?: false
         addOnNewIntentListener(updateIntentListener)
         askNotificationPermissionOnce()
+
+        // The bar goes to the main screen, then to the place asked for
+        floatingNavigationBar.onDestinationSelected = { destination ->
+            if (navController.currentDestination?.id != R.id.mainFragment) {
+                navController.popBackStack(R.id.mainFragment, false)
+            }
+            mainNavigationViewModel.request(destination)
+        }
 
         // Now playing bar
         nowPlayingBar.setOnClickListener {
@@ -329,6 +350,12 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         }
 
         launch {
+            mainNavigationViewModel.current.collectLatest {
+                floatingNavigationBar.select(it)
+            }
+        }
+
+        launch {
             nowPlayingViewModel.durationCurrentPositionMs.collectLatest {
                 nowPlayingBar.updateDurationCurrentPositionMs(it.first, it.second)
             }
@@ -384,6 +411,24 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     }
 
     /**
+     * Total vertical space taken by the floating navigation bar, including its margin.
+     */
+    private val floatingNavigationBarAreaHeight by lazy {
+        (FloatingNavigationBar.HEIGHT_DP * resources.displayMetrics.density).toInt() +
+                resources.getDimensionPixelSize(R.dimen.floating_navigation_bar_margin_bottom)
+    }
+
+    private fun updateFloatingNavigationBarPlacement() {
+        val layoutParams = floatingNavigationBar.layoutParams as FrameLayout.LayoutParams
+        val bottom = systemInsets.bottom +
+                resources.getDimensionPixelSize(R.dimen.floating_navigation_bar_margin_bottom)
+        if (layoutParams.bottomMargin != bottom) {
+            layoutParams.bottomMargin = bottom
+            floatingNavigationBar.layoutParams = layoutParams
+        }
+    }
+
+    /**
      * Total vertical space taken by the floating now playing bar, including its margins.
      */
     private val nowPlayingBarAreaHeight by lazy {
@@ -405,22 +450,12 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             R.dimen.now_playing_bar_margin_vertical
         )
 
-        var bottomBase = systemInsets.bottom
-        var startBase = systemInsets.left
-
-        val navigationBarView = frameLayout.findViewById<View>(R.id.navigationBarView)
-            ?.takeIf { navController.currentDestination?.id == R.id.mainFragment }
-            ?.takeIf { it.isShown && it.width > 0 }
-
-        if (navigationBarView != null) {
-            when (navigationBarView.width >= frameLayout.width / 2) {
-                // Bottom navigation bar
-                true -> bottomBase = maxOf(bottomBase, frameLayout.height - navigationBarView.top)
-
-                // Navigation rail
-                false -> startBase = maxOf(startBase, navigationBarView.right)
-            }
+        // Above the floating navigation bar
+        val bottomBase = systemInsets.bottom + when (floatingNavigationBar.isVisible) {
+            true -> floatingNavigationBarAreaHeight
+            false -> 0
         }
+        val startBase = systemInsets.left
 
         val layoutParams = nowPlayingBar.layoutParams as FrameLayout.LayoutParams
         val start = startBase + horizontalMargin

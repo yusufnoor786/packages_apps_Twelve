@@ -20,6 +20,13 @@
         app:defaultNavHost="true"
         app:navGraph="@navigation/fragment_main" />
 
+    <!-- The navigation of the app, floating above every page, under the player -->
+    <org.lineageos.twelve.ui.views.FloatingNavigationBar
+        android:id="@+id/floatingNavigationBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal" />
+
     <!-- Under the player (which has a higher elevation), so that it is already there when the
          player is dragged away -->
     <org.lineageos.twelve.ui.views.NowPlayingBar

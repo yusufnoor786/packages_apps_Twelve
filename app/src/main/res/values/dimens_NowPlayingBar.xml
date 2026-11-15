@@ -8,6 +8,7 @@
     <dimen name="now_playing_bar_margin_horizontal">12dp</dimen>
     <dimen name="now_playing_bar_margin_vertical">8dp</dimen>
     <dimen name="now_playing_bar_corner_radius">34dp</dimen>
+    <dimen name="floating_navigation_bar_margin_bottom">12dp</dimen>
     <dimen name="now_playing_bar_elevation">10dp</dimen>
     <dimen name="queue_item_padding">16dp</dimen>
 </resources>

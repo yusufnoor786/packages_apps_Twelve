@@ -20,7 +20,6 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.LinearLayout
 import androidx.activity.BackEventCompat
 import androidx.activity.OnBackPressedCallback
-import androidx.annotation.IdRes
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -42,13 +41,16 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.button.MaterialButtonToggleGroup
-import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.search.SearchView
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.lineageos.twelve.R
+import org.lineageos.twelve.viewmodels.MainNavigationViewModel
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.MutableStateFlow
+import androidx.fragment.app.activityViewModels
 import org.lineageos.twelve.ui.expressive.ExpressiveShape
 import org.lineageos.twelve.SettingsActivity
 import org.lineageos.twelve.ext.getViewProperty
@@ -78,10 +80,10 @@ import org.lineageos.twelve.viewmodels.MainViewModel
 class MainFragment : Fragment(R.layout.fragment_main) {
     // View models
     private val viewModel by viewModels<MainViewModel>()
+    private val mainNavigationViewModel by activityViewModels<MainNavigationViewModel>()
 
     // Views
     private val modeToggleGroup by getViewProperty<MaterialButtonToggleGroup>(R.id.modeToggleGroup)
-    private val navigationBarView by getViewProperty<NavigationBarView>(R.id.navigationBarView)
     private val playRandomSongsButton by getViewProperty<MaterialButton>(R.id.playRandomSongsButton)
     private val providerMaterialButton by getViewProperty<MaterialButton>(R.id.providerMaterialButton)
     private val refreshMaterialButton by getViewProperty<MaterialButton>(R.id.refreshMaterialButton)
@@ -231,44 +233,16 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             windowInsets
         }
 
-        ViewCompat.setOnApplyWindowInsetsListener(navigationBarView) { v, windowInsets ->
-            // The floating now playing bar is placed above this view, so the space it takes
-            // must not be added to the bottom padding
-            val insets = windowInsets.getInsets(
-                WindowInsetsCompat.Type.navigationBars() or WindowInsetsCompat.Type.displayCutout()
-            )
-
-            v.updatePadding(
-                insets,
-                start = resources.configuration.isLandscape,
-                top = resources.configuration.isLandscape,
-                bottom = true,
-            )
-
-            windowInsets
-        }
-
         ViewCompat.setOnApplyWindowInsetsListener(viewPager2) { v, windowInsets ->
             val displayCutoutInsets = windowInsets.getInsets(
                 WindowInsetsCompat.Type.displayCutout()
             )
+            // The bottom includes the floating navigation and now playing bars, see MainActivity
             val systemBarsInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            val navigationBarsInsets = windowInsets.getInsets(
-                WindowInsetsCompat.Type.navigationBars()
-            )
 
-            // Space taken by the floating now playing bar, 0 when it's hidden
-            val nowPlayingBarArea = (systemBarsInsets.bottom - navigationBarsInsets.bottom)
-                .coerceAtLeast(0)
-
-            // Keep the shuffle button above the now playing bar
             (playRandomSongsButton.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
-                val bottomMargin = playRandomSongsButtonBottomMargin + when (
-                    resources.configuration.isLandscape
-                ) {
-                    true -> systemBarsInsets.bottom
-                    false -> nowPlayingBarArea
-                }
+                // Above the floating bars and the system navigation bar
+                val bottomMargin = playRandomSongsButtonBottomMargin + systemBarsInsets.bottom
 
                 if (it.bottomMargin != bottomMargin) {
                     it.bottomMargin = bottomMargin
@@ -295,7 +269,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             WindowInsetsCompat.Builder(windowInsets)
                 .setInsets(
                     WindowInsetsCompat.Type.systemBars(),
-                    adjustInsets(systemBarsInsets, nowPlayingBarArea),
+                    adjustInsets(systemBarsInsets, systemBarsInsets.bottom),
                 )
                 .setInsets(
                     WindowInsetsCompat.Type.displayCutout(),
@@ -307,13 +281,11 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         ViewCompat.setOnApplyWindowInsetsListener(searchRecyclerView) { v, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
 
-            // The last results scroll above the floating mini player
+            // The last results scroll above the floating bars, their space is in the insets
             v.updatePadding(
                 left = insets.left,
                 right = insets.right,
-                bottom = insets.bottom + resources.getDimensionPixelSize(
-                    R.dimen.now_playing_bar_height
-                ) + 2 * resources.getDimensionPixelSize(R.dimen.now_playing_bar_margin_vertical),
+                bottom = insets.bottom,
             )
 
             windowInsets
@@ -417,7 +389,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             viewLifecycleOwner.lifecycleScope.launch {
                 viewModel.playAllAudios().onError {
                     Snackbar.make(
-                        navigationBarView,
+                        requireView(),
                         it.toString(),
                         Snackbar.LENGTH_SHORT,
                     ).show()
@@ -433,19 +405,59 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         }
         viewPager2.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
 
-        navigationBarView.setOnItemSelectedListener { item ->
-            if (item.itemId == R.id.searchFragment) {
-                searchView.show()
-                return@setOnItemSelectedListener false
+        // The floating navigation bar of the activity picks the page, and shows the one here
+        viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                currentPage.value = Page.entries[position]
             }
+        })
+        searchView.addTransitionListener { _, _, newState ->
+            searchShowing.value = newState in listOf(
+                SearchView.TransitionState.SHOWN,
+                SearchView.TransitionState.SHOWING,
+            )
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    mainNavigationViewModel.requests.collect { destination ->
+                        if (destination != MainNavigationViewModel.Destination.SEARCH &&
+                            searchView.isShowing
+                        ) {
+                            searchView.hide()
+                        }
+                        when (destination) {
+                            MainNavigationViewModel.Destination.HOME ->
+                                viewPager2.setCurrentItem(Page.ACTIVITY.ordinal, false)
 
-            val index = Page.entries.indexOfFirst { it.menuItemId == item.itemId }
+                            MainNavigationViewModel.Destination.SEARCH -> searchView.show()
 
-            if (index >= 0) {
-                viewPager2.currentItem = index
-                true
-            } else {
-                false
+                            MainNavigationViewModel.Destination.LIBRARY -> {
+                                mainNavigationViewModel.showPlaylistsRequest.value = false
+                                viewPager2.setCurrentItem(Page.LIBRARY.ordinal, false)
+                            }
+
+                            MainNavigationViewModel.Destination.PLAYLISTS -> {
+                                mainNavigationViewModel.showPlaylistsRequest.value = true
+                                viewPager2.setCurrentItem(Page.LIBRARY.ordinal, false)
+                            }
+                        }
+                    }
+                }
+                launch {
+                    combine(
+                        currentPage,
+                        searchShowing,
+                        mainNavigationViewModel.libraryShowsPlaylists,
+                    ) { page, search, playlists ->
+                        when {
+                            search -> MainNavigationViewModel.Destination.SEARCH
+                            page == Page.ACTIVITY -> MainNavigationViewModel.Destination.HOME
+                            playlists -> MainNavigationViewModel.Destination.PLAYLISTS
+                            else -> MainNavigationViewModel.Destination.LIBRARY
+                        }
+                    }.collect { mainNavigationViewModel.current.value = it }
+                }
             }
         }
 
@@ -628,12 +640,15 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     }
 
     private enum class Page(
-        @param:IdRes val menuItemId: Int,
         val createFragment: () -> Fragment,
     ) {
-        ACTIVITY(R.id.activityFragment, ::ActivityFragment),
-        LIBRARY(R.id.libraryFragment, ::LibraryFragment),
+        ACTIVITY(::ActivityFragment),
+        LIBRARY(::LibraryFragment),
     }
+
+    // What the floating navigation bar highlights
+    private val currentPage = MutableStateFlow(Page.ACTIVITY)
+    private val searchShowing = MutableStateFlow(false)
 
     companion object {
         private val LOG_TAG = MainFragment::class.simpleName!!

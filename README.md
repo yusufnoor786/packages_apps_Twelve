@@ -9,6 +9,26 @@ A music player for Android, built on [LineageOS Twelve](https://github.com/Linea
 It keeps everything Twelve does with local files and media servers, and adds an online catalog, a
 redesigned player and a Material 3 Expressive look.
 
+**[Download the latest version](https://github.com/yusufnoor786/packages_apps_Twelve/releases/latest)**
+(Android 11 or newer)
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/home.jpg" width="240" alt="Home with trending songs"><br>Home</td>
+    <td align="center"><img src="docs/screenshots/player.jpg" width="240" alt="Player"><br>Player</td>
+    <td align="center"><img src="docs/screenshots/search.jpg" width="240" alt="Search results"><br>Search</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/artists.jpg" width="240" alt="Artists in Material shapes"><br>Artists</td>
+    <td align="center"><img src="docs/screenshots/genres.jpg" width="240" alt="Genre tiles"><br>Genres</td>
+    <td></td>
+  </tr>
+</table>
+
+The colors follow the wallpaper of the phone (Material You).
+
 ## What's new in this edition
 
 **Online and offline**
