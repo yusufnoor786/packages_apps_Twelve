@@ -18,12 +18,12 @@ redesigned player and a Material 3 Expressive look.
   <tr>
     <td align="center"><img src="docs/screenshots/home.jpg" width="240" alt="Home with trending songs"><br>Home</td>
     <td align="center"><img src="docs/screenshots/player.jpg" width="240" alt="Player"><br>Player</td>
-    <td align="center"><img src="docs/screenshots/search.jpg" width="240" alt="Search results"><br>Search</td>
+    <td align="center"><img src="docs/screenshots/lyrics.jpg" width="240" alt="Full screen lyrics, synchronized word by word"><br>Lyrics</td>
   </tr>
   <tr>
+    <td align="center"><img src="docs/screenshots/search.jpg" width="240" alt="Search results"><br>Search</td>
     <td align="center"><img src="docs/screenshots/artists.jpg" width="240" alt="Artists in Material shapes"><br>Artists</td>
     <td align="center"><img src="docs/screenshots/genres.jpg" width="240" alt="Genre tiles"><br>Genres</td>
-    <td></td>
   </tr>
 </table>
 
