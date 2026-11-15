@@ -60,14 +60,15 @@
         android:textAppearance="?attr/textAppearanceTitleSmallEmphasized"
         android:textColor="?attr/colorPrimary" />
 
-    <!-- The notes can be long, they scroll inside the card -->
-    <androidx.core.widget.NestedScrollView
+    <!-- The notes can be long: they scroll inside the card, the buttons stay on screen -->
+    <org.lineageos.twelve.ui.views.MaxHeightScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:background="@drawable/bg_account_card"
-        android:maxHeight="260dp"
-        android:padding="16dp">
+        android:fadeScrollbars="false"
+        android:padding="16dp"
+        android:scrollbarStyle="outsideInset">
 
         <TextView
             android:id="@+id/changelogTextView"
@@ -79,7 +80,7 @@
             android:textIsSelectable="true"
             tools:text="• Faster search\n• Fixes" />
 
-    </androidx.core.widget.NestedScrollView>
+    </org.lineageos.twelve.ui.views.MaxHeightScrollView>
 
     <!-- While downloading -->
     <LinearLayout
