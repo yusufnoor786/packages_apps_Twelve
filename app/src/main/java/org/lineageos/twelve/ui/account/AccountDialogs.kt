@@ -357,10 +357,18 @@ fun Fragment.showAccountDialog(repository: AccountRepository) {
     }
 
     signOutButton.setOnClickListener {
-        viewLifecycleOwner.lifecycleScope.launch {
-            repository.signOut()
-            Toast.makeText(context, R.string.account_signed_out, Toast.LENGTH_SHORT).show()
-        }
+        MaterialAlertDialogBuilder(context)
+            .setTitle(R.string.account_sign_out_title)
+            .setMessage(R.string.account_sign_out_message)
+            .setPositiveButton(R.string.account_sign_out) { _, _ ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    repository.signOut()
+                    Toast.makeText(context, R.string.account_signed_out, Toast.LENGTH_SHORT)
+                        .show()
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     deleteAccountButton.setOnClickListener { showDeleteAccountDialog(repository) }

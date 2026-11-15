@@ -103,8 +103,9 @@ updates" in the app info, goes back to the version of the ROM.
 
 Signing in keeps the favorites, the playlists and some settings of the online catalog (languages,
 streaming quality, AutoPlay, crossfade, Automix, lyrics offset) with the account, the same on every
-phone signed in to it. Without an account everything stays on the phone, as before. Local files,
-and the playlists of media servers, stay where they are.
+phone signed in to it. Signing in shows the library of the account; signing out or deleting the
+account removes it from the phone. Without an account everything stays on the phone, as before.
+Local files, and the playlists of media servers, stay where they are.
 
 Accounts live in a [Supabase](https://supabase.com/) project, set in
 `app/src/main/res/values/config_account.xml`: the project URL and its publishable key, which is

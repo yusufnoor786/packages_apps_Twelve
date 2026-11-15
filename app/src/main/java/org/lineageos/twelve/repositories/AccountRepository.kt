@@ -251,15 +251,20 @@ class AccountRepository(
     }
 
     /**
-     * Sign out. What is on the device stays.
+     * Sign out. The last changes are sent to the account first, then the favorites and the
+     * playlists leave the device with it: they are back when signing in again.
      */
     suspend fun signOut() {
+        if (session != null) {
+            sync()
+        }
         sessionMutex.withLock { session }?.let { client.signOut(it) }
         forgetSession()
+        clearLibrary()
     }
 
     /**
-     * Delete the account and what is kept for it. What is on the device stays.
+     * Delete the account, what is kept for it, and its favorites and playlists on the device.
      */
     suspend fun deleteAccount(): AccountResult<Unit> {
         val session = validSession() ?: return AccountResult.Failure(AccountError.SESSION_EXPIRED)
@@ -267,11 +272,18 @@ class AccountRepository(
         return when (val result = client.deleteAccount(session)) {
             is AccountResult.Success -> {
                 forgetSession()
+                clearLibrary()
                 result
             }
 
             is AccountResult.Failure -> result
         }
+    }
+
+    private suspend fun clearLibrary() = syncMutex.withLock {
+        libraryStore.clear()
+        lastSyncedLibrary = libraryStore.library.value
+        sessionStore.libraryOwner = null
     }
 
     fun requestSync() {
@@ -295,6 +307,17 @@ class AccountRepository(
         }
 
         val now = System.currentTimeMillis()
+
+        // Signing in to an account that has a library: the device shows that library, what was on
+        // it before belonged to no account or to another one
+        if (remote != null && sessionStore.libraryOwner != session.userId) {
+            replaceLocally(remote)
+            sessionStore.libraryOwner = session.userId
+            sessionStore.lastSyncAt = now
+            mutableSyncState.value = SyncState.Synced(now)
+            return@withLock AccountResult.Success(Unit)
+        }
+
         val local = SyncDocument.of(
             libraryStore.library.value, localSettings(), sessionStore.settingsModifiedAt
         )
@@ -309,9 +332,30 @@ class AccountRepository(
             }
         }
 
+        sessionStore.libraryOwner = session.userId
         sessionStore.lastSyncAt = now
         mutableSyncState.value = SyncState.Synced(now)
         AccountResult.Success(Unit)
+    }
+
+    /**
+     * Put the library and the settings of the account in place of those on the device.
+     */
+    private suspend fun replaceLocally(remote: SyncDocument) {
+        libraryStore.replace { remote.applyTo(StoredLibrary(nextPlaylistId = it.nextPlaylistId)) }
+        lastSyncedLibrary = libraryStore.library.value
+
+        if (remote.settings.isNotEmpty() && remote.settings != localSettings()) {
+            withContext(Dispatchers.Main) {
+                applyingSettings = true
+                try {
+                    sharedPreferences.edit(commit = true) { putSettings(remote.settings) }
+                } finally {
+                    applyingSettings = false
+                }
+            }
+        }
+        sessionStore.settingsModifiedAt = remote.settingsModifiedAt
     }
 
     private suspend fun applyLocally(merged: SyncDocument) {

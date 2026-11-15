@@ -121,6 +121,12 @@ class SaavnLibraryStore(
     @Synchronized
     fun replace(transform: (StoredLibrary) -> StoredLibrary) = update(transform)
 
+    /**
+     * Forget every favorite and playlist, when the account they belong to goes away.
+     */
+    @Synchronized
+    fun clear() = update { StoredLibrary(nextPlaylistId = it.nextPlaylistId) }
+
     @Synchronized
     fun addToPlaylist(playlistId: Long, songId: String) = updatePlaylist(playlistId) {
         when (songId in it.songIds) {

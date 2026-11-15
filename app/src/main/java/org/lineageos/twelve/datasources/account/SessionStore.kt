@@ -72,6 +72,19 @@ class SessionStore(context: Context) {
         get() = preferences.getLong(KEY_LAST_SYNC_AT, 0L)
         set(value) = preferences.edit { putLong(KEY_LAST_SYNC_AT, value) }
 
+    /**
+     * The account the favorites and playlists on the device belong to, null when they belong to
+     * none: signing in to another account puts that account's library in their place.
+     */
+    var libraryOwner: String?
+        get() = preferences.getString(KEY_LIBRARY_OWNER, null)
+        set(value) = preferences.edit {
+            when (value) {
+                null -> remove(KEY_LIBRARY_OWNER)
+                else -> putString(KEY_LIBRARY_OWNER, value)
+            }
+        }
+
     var pendingCodeVerifier: String?
         get() = preferences.getString(KEY_CODE_VERIFIER, null)
         set(value) = preferences.edit {
@@ -105,6 +118,7 @@ class SessionStore(context: Context) {
         private const val KEY_SETTINGS_MODIFIED_AT = "settings_modified_at"
         private const val KEY_LAST_SYNC_AT = "last_sync_at"
         private const val KEY_CODE_VERIFIER = "code_verifier"
+        private const val KEY_LIBRARY_OWNER = "library_owner"
 
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"
         private const val KEY_ALIAS = "twelve_account_session"
