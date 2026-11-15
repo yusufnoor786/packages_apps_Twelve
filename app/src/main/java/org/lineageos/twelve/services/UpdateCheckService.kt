@@ -47,9 +47,10 @@ class UpdateCheckService : JobService() {
         job = scope.launch {
             val result = repository.check(force = true)
             if (result is UpdateRepository.CheckResult.Available &&
-                repository.markNotified(result.release)
-            ) {
+                !repository.wasNotified(result.release) &&
                 notify(this@UpdateCheckService, result.release)
+            ) {
+                repository.setNotified(result.release)
             }
             jobFinished(params, result == UpdateRepository.CheckResult.Failed)
         }
@@ -95,11 +96,14 @@ class UpdateCheckService : JobService() {
             )
         }
 
-        fun notify(context: Context, release: AppRelease) {
+        /**
+         * Show the notification of [release], false when the app may not show notifications.
+         */
+        fun notify(context: Context, release: AppRelease): Boolean {
             if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
                 PackageManager.PERMISSION_GRANTED
             ) {
-                return
+                return false
             }
 
             context.getSystemService(NotificationManager::class.java)?.createNotificationChannel(
@@ -142,6 +146,7 @@ class UpdateCheckService : JobService() {
 
             @Suppress("MissingPermission")
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+            return true
         }
     }
 }

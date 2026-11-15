@@ -150,15 +150,17 @@ class UpdateRepository(private val context: Context) {
     }
 
     /**
-     * Whether the notification of [release] was shown already, it is shown once.
+     * Whether the notification of [release] was shown already: it is shown once.
      */
-    fun markNotified(release: AppRelease): Boolean {
-        if (preferences.getLong(KEY_NOTIFIED_CODE, -1L) == release.versionCode) {
-            return false
-        }
+    fun wasNotified(release: AppRelease) =
+        preferences.getLong(KEY_NOTIFIED_CODE, -1L) == release.versionCode
+
+    /**
+     * The notification of [release] was shown. Only once it really was: without the permission
+     * to show notifications it is tried again on the next check.
+     */
+    fun setNotified(release: AppRelease) =
         preferences.edit { putLong(KEY_NOTIFIED_CODE, release.versionCode) }
-        return true
-    }
 
     /**
      * Download [release] and check it. Null when it failed or the file is not the published one.
@@ -285,7 +287,7 @@ class UpdateRepository(private val context: Context) {
         private const val KEY_LAST_CHECK_AT = "last_check_at"
         private const val KEY_SNOOZED_CODE = "snoozed_code"
         private const val KEY_SNOOZED_AT = "snoozed_at"
-        private const val KEY_NOTIFIED_CODE = "notified_code"
+        private const val KEY_NOTIFIED_CODE = "notified_version_code"
         private const val KEY_FEED_URL = "update_feed_url"
 
         private const val UPDATES_DIRECTORY = "updates"
