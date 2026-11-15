@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- The Supabase project accounts are kept in, see supabase/schema.sql. The key is the
+         publishable one, meant to be shipped in apps. Leave both empty to build without
+         accounts. -->
+    <string name="account_supabase_url" translatable="false">https://kghepnfotojchuzaiabq.supabase.co</string>
+    <string name="account_supabase_key" translatable="false">sb_publishable_N3aIpGS_R7PXULxiS-8Ijw_CXdP4Pb6</string>
+</resources>

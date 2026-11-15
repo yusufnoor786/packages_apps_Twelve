@@ -99,6 +99,29 @@ The version code must never be lower than the one of the ROM (`app/Android.bp`).
 settings the release APK is not signed and cannot be installed. A factory reset, or "Uninstall
 updates" in the app info, goes back to the version of the ROM.
 
+## Accounts
+
+Signing in keeps the favorites, the playlists and some settings of the online catalog (languages,
+streaming quality, AutoPlay, crossfade, Automix, lyrics offset) with the account, the same on every
+phone signed in to it. Without an account everything stays on the phone, as before. Local files,
+and the playlists of media servers, stay where they are.
+
+Accounts live in a [Supabase](https://supabase.com/) project, set in
+`app/src/main/res/values/config_account.xml`: the project URL and its publishable key, which is
+meant to be in apps. Leave both empty to build without accounts. Once, in the dashboard of the
+project:
+
+1. **SQL Editor**: run [`supabase/schema.sql`](supabase/schema.sql). It creates the table, where
+   every account can only read and change its own row, and lets users delete their account.
+2. **Authentication → URL Configuration → Redirect URLs**: add
+   `org.lineageos.twelve://login-callback`.
+3. **Email** sign in works as it is: new accounts confirm their address from an email first.
+4. **GitHub**: on GitHub, Settings → Developer settings → OAuth Apps → New OAuth App, with the
+   authorization callback URL `https://<project-ref>.supabase.co/auth/v1/callback`. Generate a
+   client secret, then turn on GitHub in **Authentication → Sign In / Providers** with the client
+   ID and secret.
+Sign in with GitHub happens in the browser, so the app needs no GitHub library.
+
 ## Credits
 
 ### Base project

@@ -9,6 +9,19 @@
 
     <PreferenceCategory
         app:iconSpaceReserved="false"
+        app:key="account_category"
+        app:title="@string/account_header">
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="account"
+            app:summary="@string/account_signed_out_summary"
+            app:title="@string/account_sign_in" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
         app:title="@string/general_header">
 
         <SwitchPreference

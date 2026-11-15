@@ -40,7 +40,14 @@ import androidx.preference.SwitchPreference
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import org.lineageos.twelve.repositories.AccountRepository
+import org.lineageos.twelve.ui.account.accountSummary
+import org.lineageos.twelve.ui.account.showAccountDialog
+import org.lineageos.twelve.ui.account.showAccountSignInDialog
 import org.lineageos.twelve.ext.ENABLE_OFFLOAD_KEY
 import org.lineageos.twelve.ext.ONLINE_LANGUAGES_KEY
 import org.lineageos.twelve.ext.onlineLanguages
@@ -192,6 +199,11 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
         private val rescanMediaStore by lazy { findPreference<Preference>("rescan_media_store")!! }
         private val resetLocalStats by lazy { findPreference<Preference>("reset_local_stats")!! }
         private val skipSilence by lazy { findPreference<SwitchPreference>(SKIP_SILENCE_KEY)!! }
+        private val accountCategory by lazy { findPreference<PreferenceCategory>("account_category")!! }
+        private val account by lazy { findPreference<Preference>("account")!! }
+        private val accountRepository by lazy {
+            (requireActivity().application as TwelveApplication).accountRepository
+        }
         private val onlineLanguages by lazy {
             findPreference<MultiSelectListPreference>(ONLINE_LANGUAGES_KEY)!!
         }
@@ -211,6 +223,30 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
                     viewModel.toggleSkipSilence(newValue as Boolean)
                 }
                 true
+            }
+
+            // The account keeps the online library, when the build has a project for it
+            accountCategory.isVisible = accountRepository.isAvailable
+            account.setOnPreferenceClickListener {
+                when (accountRepository.state.value) {
+                    AccountRepository.State.SignedOut -> showAccountSignInDialog(accountRepository)
+                    is AccountRepository.State.SignedIn -> showAccountDialog(accountRepository)
+                }
+                true
+            }
+            lifecycleScope.launch {
+                lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    combine(accountRepository.state, accountRepository.syncState, ::Pair)
+                        .collect { (state, syncState) ->
+                            account.title = getString(
+                                when (state) {
+                                    AccountRepository.State.SignedOut -> R.string.account_sign_in
+                                    is AccountRepository.State.SignedIn -> R.string.account_title
+                                }
+                            )
+                            account.summary = requireContext().accountSummary(state, syncState)
+                        }
+                }
             }
 
             // Nothing chosen yet: show the languages that follow the phone

@@ -19,6 +19,8 @@ data class StoredPlaylist(
     val name: String,
     val songIds: List<String> = emptyList(),
     val modifiedAt: Long = 0L,
+    // The same on every device of an account, the id is only known to this one
+    val uid: String = "",
 )
 
 @Serializable
@@ -26,6 +28,11 @@ data class StoredLibrary(
     val favorites: List<String> = emptyList(),
     val playlists: List<StoredPlaylist> = emptyList(),
     val nextPlaylistId: Long = 1L,
+    // When each favorite was added, and when songs stopped being favorites
+    val favoriteTimes: Map<String, Long> = emptyMap(),
+    val removedFavorites: Map<String, Long> = emptyMap(),
+    // Playlists deleted, by uid: an account sync must not bring them back
+    val deletedPlaylists: Map<String, Long> = emptyMap(),
 )
 
 /**
@@ -39,19 +46,27 @@ class SaavnLibraryStore(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
-    private val mutableLibrary = MutableStateFlow(load())
+    private val mutableLibrary = MutableStateFlow(load().withIdentity().also { save(it) })
     val library: StateFlow<StoredLibrary> = mutableLibrary.asStateFlow()
 
     val favoritesIds get() = library.value.favorites
 
     @Synchronized
     fun setFavorite(songId: String, favorite: Boolean) = update { library ->
-        library.copy(
-            favorites = when (favorite) {
-                true -> listOf(songId) + library.favorites.filterNot { it == songId }
-                false -> library.favorites.filterNot { it == songId }
-            }
-        )
+        val now = System.currentTimeMillis()
+        when (favorite) {
+            true -> library.copy(
+                favorites = listOf(songId) + library.favorites.filterNot { it == songId },
+                favoriteTimes = library.favoriteTimes + (songId to now),
+                removedFavorites = library.removedFavorites - songId,
+            )
+
+            false -> library.copy(
+                favorites = library.favorites.filterNot { it == songId },
+                favoriteTimes = library.favoriteTimes - songId,
+                removedFavorites = library.removedFavorites + (songId to now),
+            )
+        }
     }
 
     @Synchronized
@@ -61,7 +76,7 @@ class SaavnLibraryStore(
             createdId = library.nextPlaylistId
             library.copy(
                 playlists = library.playlists + StoredPlaylist(
-                    createdId, name, emptyList(), System.currentTimeMillis()
+                    createdId, name, emptyList(), System.currentTimeMillis(), newUid()
                 ),
                 nextPlaylistId = createdId + 1,
             )
@@ -76,7 +91,7 @@ class SaavnLibraryStore(
             createdId = library.nextPlaylistId
             library.copy(
                 playlists = library.playlists + StoredPlaylist(
-                    createdId, name, songIds.distinct(), System.currentTimeMillis()
+                    createdId, name, songIds.distinct(), System.currentTimeMillis(), newUid()
                 ),
                 nextPlaylistId = createdId + 1,
             )
@@ -91,8 +106,20 @@ class SaavnLibraryStore(
 
     @Synchronized
     fun deletePlaylist(playlistId: Long) = update { library ->
-        library.copy(playlists = library.playlists.filterNot { it.id == playlistId })
+        val deleted = library.playlists.firstOrNull { it.id == playlistId }
+        library.copy(
+            playlists = library.playlists.filterNot { it.id == playlistId },
+            deletedPlaylists = deleted?.uid?.takeIf { it.isNotEmpty() }
+                ?.let { library.deletedPlaylists + (it to System.currentTimeMillis()) }
+                ?: library.deletedPlaylists,
+        )
     }
+
+    /**
+     * Put a library that came from the account in place of this one, see the account sync.
+     */
+    @Synchronized
+    fun replace(transform: (StoredLibrary) -> StoredLibrary) = update(transform)
 
     @Synchronized
     fun addToPlaylist(playlistId: Long, songId: String) = updatePlaylist(playlistId) {
@@ -130,6 +157,17 @@ class SaavnLibraryStore(
         mutableLibrary.value = updated
         save(updated)
     }
+
+    /**
+     * Libraries saved before the account sync get what it needs: an uid for each playlist and a
+     * time for each favorite (an old one, so that a removal anywhere wins over it).
+     */
+    private fun StoredLibrary.withIdentity() = copy(
+        playlists = playlists.map { if (it.uid.isEmpty()) it.copy(uid = newUid()) else it },
+        favoriteTimes = favorites.associateWith { favoriteTimes[it] ?: 1L },
+    )
+
+    private fun newUid() = java.util.UUID.randomUUID().toString()
 
     private fun load() = runCatching {
         json.decodeFromString<StoredLibrary>(file.readText())

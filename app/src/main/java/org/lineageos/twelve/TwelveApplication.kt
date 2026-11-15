@@ -15,6 +15,7 @@ import com.google.android.material.color.DynamicColors
 import kotlinx.coroutines.MainScope
 import org.lineageos.twelve.database.TwelveDatabase
 import org.lineageos.twelve.ext.followPhoneForOnlineLanguages
+import org.lineageos.twelve.repositories.AccountRepository
 import org.lineageos.twelve.repositories.MediaRepository
 import org.lineageos.twelve.repositories.OutputConfigurationRepository
 import org.lineageos.twelve.repositories.ProvidersRepository
@@ -31,6 +32,14 @@ class TwelveApplication : Application(), SingletonImageLoader.Factory {
     val mediaRepository by lazy {
         MediaRepository(applicationContext, coroutineScope, providersRepository, database)
     }
+    val accountRepository by lazy {
+        AccountRepository(
+            applicationContext,
+            coroutineScope,
+            mediaRepository.onlineLibraryStore,
+            PreferenceManager.getDefaultSharedPreferences(applicationContext),
+        )
+    }
     val resumptionPlaylistRepository by lazy { ResumptionPlaylistRepository(database) }
     val outputConfigurationRepository by lazy { OutputConfigurationRepository() }
 
@@ -41,6 +50,9 @@ class TwelveApplication : Application(), SingletonImageLoader.Factory {
         DynamicColors.applyToActivitiesIfAvailable(this)
 
         PreferenceManager.getDefaultSharedPreferences(this).followPhoneForOnlineLanguages()
+
+        // Keep the library of the account in sync, nothing happens when signed out
+        accountRepository.start()
     }
 
     override fun newImageLoader(context: PlatformContext) = ImageLoader.Builder(this)

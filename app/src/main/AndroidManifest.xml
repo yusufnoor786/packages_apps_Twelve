@@ -70,6 +70,28 @@
             android:label="@string/title_activity_settings"
             android:theme="@style/Theme.SettingsLib" />
 
+        <!-- GitHub sign in comes back here, see AccountRepository.REDIRECT_URI -->
+        <activity
+            android:name=".AccountCallbackActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="login-callback"
+                    android:scheme="org.lineageos.twelve" />
+            </intent-filter>
+
+        </activity>
+
         <activity
             android:name=".ViewActivity"
             android:excludeFromRecents="true"

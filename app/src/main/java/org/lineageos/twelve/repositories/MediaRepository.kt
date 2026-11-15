@@ -122,13 +122,18 @@ class MediaRepository(
     )
 
     /**
+     * The favorites and playlists of the online catalog, also kept by the account.
+     */
+    val onlineLibraryStore = SaavnLibraryStore(File(context.filesDir, ONLINE_LIBRARY_FILE_NAME))
+
+    /**
      * Online catalog data source.
      */
     private val saavnDataSource = OkHttpClient.Builder().cache(cache).build().let { okHttpClient ->
         SaavnDataSource(
             SaavnClient(okHttpClient, File(context.cacheDir, ONLINE_CACHE_DIRECTORY_NAME)),
             LyricsClient(okHttpClient),
-            SaavnLibraryStore(File(context.filesDir, ONLINE_LIBRARY_FILE_NAME)),
+            onlineLibraryStore,
             sharedPreferences,
             context.getSystemService(ConnectivityManager::class.java),
         )
