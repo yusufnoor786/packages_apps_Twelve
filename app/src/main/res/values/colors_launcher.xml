@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- The launcher icon: a ring and a disc in the accent color around a white note, on a light
+         tint of the same color. From Android 12 the accent of the device is used, see values-v31. -->
+    <color name="launcher_icon_accent">#BC2A2A</color>
+    <color name="launcher_icon_background">#FFDAD6</color>
+</resources>

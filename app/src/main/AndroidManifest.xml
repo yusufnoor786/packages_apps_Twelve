@@ -153,6 +153,12 @@
             android:name=".UpdateInstallReceiver"
             android:exported="false" />
 
+        <!-- Switched on and off to make launchers draw the icon again, see LauncherIconRefresher -->
+        <receiver
+            android:name=".utils.LauncherIconRefresher$IconRefreshReceiver"
+            android:enabled="false"
+            android:exported="false" />
+
         <receiver
             android:name="androidx.media3.session.MediaButtonReceiver"
             android:exported="true">

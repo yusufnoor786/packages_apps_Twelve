@@ -29,6 +29,7 @@ import android.view.animation.DecelerateInterpolator
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.lineageos.twelve.fragments.NowPlayingFragment
 import org.lineageos.twelve.ui.update.showUpdateDialog
+import org.lineageos.twelve.utils.LauncherIconRefresher
 import org.lineageos.twelve.repositories.UpdateRepository
 import org.lineageos.twelve.services.UpdateCheckService
 import androidx.navigation.fragment.NavHostFragment
@@ -142,6 +143,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     override fun onStart() {
         super.onStart()
         checkForUpdate()
+        LauncherIconRefresher.refreshIfNeeded(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -23,6 +23,7 @@ import org.lineageos.twelve.repositories.OutputConfigurationRepository
 import org.lineageos.twelve.repositories.ProvidersRepository
 import org.lineageos.twelve.repositories.ResumptionPlaylistRepository
 import org.lineageos.twelve.ui.coil.ThumbnailMapper
+import org.lineageos.twelve.utils.LauncherIconRefresher
 
 @androidx.annotation.OptIn(UnstableApi::class)
 class TwelveApplication : Application(), SingletonImageLoader.Factory {
@@ -57,10 +58,20 @@ class TwelveApplication : Application(), SingletonImageLoader.Factory {
         // Keep the library of the account in sync, nothing happens when signed out
         accountRepository.start()
 
+        // The launcher icon follows the accent color of the device
+        LauncherIconRefresher.refreshIfNeeded(this)
+
         // Look for updates every day
         if (updateRepository.isAvailable) {
             UpdateCheckService.schedule(this, updateRepository.autoCheck)
         }
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+
+        // A new wallpaper or theme gives new colors
+        LauncherIconRefresher.refreshIfNeeded(this)
     }
 
     override fun newImageLoader(context: PlatformContext) = ImageLoader.Builder(this)
