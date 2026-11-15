@@ -141,6 +141,31 @@
 
     <PreferenceCategory
         app:iconSpaceReserved="false"
+        app:key="updates_category"
+        app:title="@string/updates_header">
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="updates_check"
+            app:title="@string/updates_check" />
+
+        <SwitchPreference
+            app:iconSpaceReserved="false"
+            app:key="updates_auto"
+            app:persistent="false"
+            app:summary="@string/updates_auto_summary"
+            app:title="@string/updates_auto" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="updates_manual"
+            app:summary="@string/updates_manual_summary"
+            app:title="@string/updates_manual" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
         app:title="@string/experimental_header">
 
         <SwitchPreference

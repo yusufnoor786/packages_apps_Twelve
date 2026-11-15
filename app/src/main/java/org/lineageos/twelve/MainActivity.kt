@@ -28,6 +28,9 @@ import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.lineageos.twelve.fragments.NowPlayingFragment
+import org.lineageos.twelve.ui.update.showUpdateDialog
+import org.lineageos.twelve.repositories.UpdateRepository
+import org.lineageos.twelve.services.UpdateCheckService
 import androidx.navigation.fragment.NavHostFragment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -76,6 +79,70 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     // Intents
     private val intentListener = Consumer<Intent> { intentsViewModel.onIntent(it) }
+
+    // Updates
+    private val updateRepository by lazy { (application as TwelveApplication).updateRepository }
+    private var showUpdateOnStart = false
+    private var updatePromptedThisRun = false
+    private val updateIntentListener = Consumer<Intent> {
+        if (it.getBooleanExtra(UpdateCheckService.EXTRA_SHOW_UPDATE, false)) {
+            showUpdateOnStart = true
+            checkForUpdate()
+        }
+    }
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { }
+
+    /**
+     * Ask once whether the app may show notifications, for the updates: playback does not need
+     * it.
+     */
+    private fun askNotificationPermissionOnce() {
+        if (!updateRepository.isAvailable ||
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        val preferences = getSharedPreferences("updates", MODE_PRIVATE)
+        if (preferences.getBoolean(KEY_ASKED_NOTIFICATIONS, false)) {
+            return
+        }
+        preferences.edit().putBoolean(KEY_ASKED_NOTIFICATIONS, true).apply()
+        notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    /**
+     * Look for an update and show its popup, once a run unless the notification asked for it.
+     */
+    private fun checkForUpdate() {
+        if (!updateRepository.isAvailable) {
+            return
+        }
+        if (!updateRepository.autoCheck && !showUpdateOnStart) {
+            return
+        }
+
+        lifecycleScope.launch {
+            val result = updateRepository.check(force = showUpdateOnStart)
+            val release = (result as? UpdateRepository.CheckResult.Available)?.release
+                ?: return@launch
+
+            val asked = showUpdateOnStart
+            showUpdateOnStart = false
+            if (asked || (!updatePromptedThisRun && updateRepository.shouldPrompt(release))) {
+                updatePromptedThisRun = true
+                showUpdateDialog(updateRepository, release)
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        checkForUpdate()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -144,6 +211,12 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         intentsViewModel.onIntent(intent)
         addOnNewIntentListener(intentListener)
 
+        // Updates: the notification opens the popup, otherwise it shows when one is found
+        showUpdateOnStart = intent?.getBooleanExtra(UpdateCheckService.EXTRA_SHOW_UPDATE, false)
+            ?: false
+        addOnNewIntentListener(updateIntentListener)
+        askNotificationPermissionOnce()
+
         // Now playing bar
         nowPlayingBar.setOnClickListener {
             openNowPlaying()
@@ -174,6 +247,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     override fun onDestroy() {
         removeOnNewIntentListener(intentListener)
+        removeOnNewIntentListener(updateIntentListener)
 
         super.onDestroy()
     }
@@ -440,6 +514,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     }
 
     companion object {
+        private const val KEY_ASKED_NOTIFICATIONS = "asked_notifications"
+
         private val LOG_TAG = MainActivity::class.simpleName!!
 
         private const val OPEN_ANIMATION_MS = 340L

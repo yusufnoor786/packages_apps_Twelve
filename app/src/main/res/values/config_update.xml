@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- The GitHub repository whose releases update the app, as owner/name. Leave it empty to
+         build without updates. -->
+    <string name="update_github_repository" translatable="false">yusufnoor786/packages_apps_Twelve</string>
+</resources>

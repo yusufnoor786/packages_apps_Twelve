@@ -99,6 +99,25 @@ The version code must never be lower than the one of the ROM (`app/Android.bp`).
 settings the release APK is not signed and cannot be installed. A factory reset, or "Uninstall
 updates" in the app info, goes back to the version of the ROM.
 
+### Publishing an update
+
+The app looks for a newer version in the GitHub releases of the repository set in
+`app/src/main/res/values/config_update.xml` (`owner/name`, empty to build without updates):
+when it opens, from **Settings → Updates → Check for updates**, and about once a day in the
+background. A newer version shows a notification and a popup with the release notes, to download
+and install it or put it off for a day. Android asks the user to confirm the install, and the
+first time to allow the app to install updates.
+
+1. Raise `versionCode` and `versionName` in `app/build.gradle.kts`, and the same values in
+   `app/Android.bp`.
+2. Build the signed release APK (see above) and name it `Twelve-<versionName>-<versionCode>.apk`,
+   for example `Twelve-2.1-3.apk`: the app reads the version from that name.
+3. Create a GitHub release, for example with the tag `v2.1`, attach the APK, and write the notes:
+   they are shown in the popup (Markdown lists, bold and links are shown as plain text).
+
+The app installs an APK only when its SHA-256 matches the one GitHub gives for the file. Drafts and
+pre-releases are not offered.
+
 ## Accounts
 
 Signing in keeps the favorites, the playlists and some settings of the online catalog (languages,

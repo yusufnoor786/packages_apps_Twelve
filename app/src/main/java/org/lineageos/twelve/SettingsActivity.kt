@@ -45,6 +45,9 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import org.lineageos.twelve.repositories.AccountRepository
+import org.lineageos.twelve.repositories.UpdateRepository
+import org.lineageos.twelve.services.UpdateCheckService
+import org.lineageos.twelve.ui.update.showUpdateDialog
 import org.lineageos.twelve.ui.account.accountSummary
 import org.lineageos.twelve.ui.account.showAccountDialog
 import org.lineageos.twelve.ui.account.showAccountSignInDialog
@@ -204,6 +207,13 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
         private val accountRepository by lazy {
             (requireActivity().application as TwelveApplication).accountRepository
         }
+        private val updatesCategory by lazy { findPreference<PreferenceCategory>("updates_category")!! }
+        private val updatesCheck by lazy { findPreference<Preference>("updates_check")!! }
+        private val updatesAuto by lazy { findPreference<SwitchPreference>("updates_auto")!! }
+        private val updatesManual by lazy { findPreference<Preference>("updates_manual")!! }
+        private val updateRepository by lazy {
+            (requireActivity().application as TwelveApplication).updateRepository
+        }
         private val onlineLanguages by lazy {
             findPreference<MultiSelectListPreference>(ONLINE_LANGUAGES_KEY)!!
         }
@@ -249,6 +259,36 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
                 }
             }
 
+            // Updates from the releases of the project
+            updatesCategory.isVisible = updateRepository.isAvailable
+            updatesCheck.summary = getString(
+                R.string.updates_version, updateRepository.installedVersionName
+            )
+            updatesCheck.setOnPreferenceClickListener {
+                checkForUpdate()
+                true
+            }
+            updatesAuto.isChecked = updateRepository.autoCheck
+            updatesAuto.setOnPreferenceChangeListener { _, newValue ->
+                val enabled = newValue as Boolean
+                updateRepository.autoCheck = enabled
+                UpdateCheckService.schedule(requireContext(), enabled)
+                true
+            }
+            updatesManual.setOnPreferenceClickListener {
+                try {
+                    startActivity(
+                        android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse(updateRepository.releasesPageUrl),
+                        )
+                    )
+                } catch (e: android.content.ActivityNotFoundException) {
+                    // No browser
+                }
+                true
+            }
+
             // Nothing chosen yet: show the languages that follow the phone
             if (onlineLanguages.values.isEmpty()) {
                 onlineLanguages.values = preferenceManager.sharedPreferences
@@ -263,6 +303,29 @@ class SettingsActivity : AppCompatActivity(R.layout.activity_settings) {
             rescanMediaStore.setOnPreferenceClickListener {
                 showRescanMediaStoreDialog()
                 true
+            }
+        }
+
+        private fun checkForUpdate() {
+            val version = getString(R.string.updates_version, updateRepository.installedVersionName)
+            updatesCheck.summary = getString(R.string.updates_checking)
+            updatesCheck.isEnabled = false
+
+            lifecycleScope.launch {
+                val result = updateRepository.check(force = true)
+                updatesCheck.isEnabled = true
+                updatesCheck.summary = when (result) {
+                    is UpdateRepository.CheckResult.Available -> {
+                        requireActivity().showUpdateDialog(updateRepository, result.release)
+                        version
+                    }
+
+                    UpdateRepository.CheckResult.UpToDate ->
+                        "$version · ${getString(R.string.updates_up_to_date)}"
+
+                    UpdateRepository.CheckResult.Failed ->
+                        "$version · ${getString(R.string.updates_check_failed)}"
+                }
             }
         }
 

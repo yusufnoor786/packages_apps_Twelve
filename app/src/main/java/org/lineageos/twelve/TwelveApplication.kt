@@ -16,6 +16,8 @@ import kotlinx.coroutines.MainScope
 import org.lineageos.twelve.database.TwelveDatabase
 import org.lineageos.twelve.ext.followPhoneForOnlineLanguages
 import org.lineageos.twelve.repositories.AccountRepository
+import org.lineageos.twelve.repositories.UpdateRepository
+import org.lineageos.twelve.services.UpdateCheckService
 import org.lineageos.twelve.repositories.MediaRepository
 import org.lineageos.twelve.repositories.OutputConfigurationRepository
 import org.lineageos.twelve.repositories.ProvidersRepository
@@ -40,6 +42,7 @@ class TwelveApplication : Application(), SingletonImageLoader.Factory {
             PreferenceManager.getDefaultSharedPreferences(applicationContext),
         )
     }
+    val updateRepository by lazy { UpdateRepository(applicationContext) }
     val resumptionPlaylistRepository by lazy { ResumptionPlaylistRepository(database) }
     val outputConfigurationRepository by lazy { OutputConfigurationRepository() }
 
@@ -53,6 +56,11 @@ class TwelveApplication : Application(), SingletonImageLoader.Factory {
 
         // Keep the library of the account in sync, nothing happens when signed out
         accountRepository.start()
+
+        // Look for updates every day
+        if (updateRepository.isAvailable) {
+            UpdateCheckService.schedule(this, updateRepository.autoCheck)
+        }
     }
 
     override fun newImageLoader(context: PlatformContext) = ImageLoader.Builder(this)
