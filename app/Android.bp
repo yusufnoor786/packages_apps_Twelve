@@ -20,9 +20,9 @@ android_app {
     aaptflags: [
         // DO NOT EDIT THIS SECTION MANUALLY
         "--version-name",
-        "2.4",
+        "2.5",
         "--version-code",
-        "6",
+        "7",
     ],
 
     use_embedded_native_libs: true,
